@@ -31,7 +31,7 @@ return the three-character timezone abbreviation of the named timezone
 
 return the offset as minutes west of GMT of the named timezone
 
-    var tzOffset = parseInt(child_process.exec("env TZ='" + tzName + "' date +%z"));
+    var tzOffset = parseInt(child_process.execSync("env TZ='" + tzName + "' date +%z"));
     if (tzOffset < 0) return ( 60 * Math.floor(-tzOffset / 100) - -tzOffset % 100 );
     else return -( 60 * Math.floor(tzOffset / 100) + tzOffset % 100 );
 
