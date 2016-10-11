@@ -21,23 +21,25 @@ Api
 
 return the three-character timezone abbreviation of the named timezone
 
-// #include <time.h>
-// tzset();
-// return tzname[0], tzname[1] ([0] is EST, [1] is EDT; `daylight` is set if toggles dst)
+    return child_process.execSync("env TZ='" + tzName + "' date +%Z");
+
+    // #include <time.h>
+    // tzset();
+    // return tzname[0], tzname[1] ([0] is EST, [1] is EDT; `daylight` is set if toggles dst)
 
 ### offset( tzName ), getTimezoneOffset
 
-return the offset in minutes of the named timezone west of GMT
+return the offset as minutes west of GMT of the named timezone
+
+    var tzOffset = parseInt(child_process.exec("env TZ='" + tzName + "' date +%z"));
+    if (tzOffset < 0) return ( 60 * Math.floor(-tzOffset / 100) - -tzOffset % 100 );
+    else return -( 60 * Math.floor(tzOffset / 100) + tzOffset % 100 );
 
 ### convert( timestamp, tzFromName, tzToName )
 
-date( tzName, format [,timestamp] )
-
-strftime( tzName, format [,timestamp] )
-
-strtotime( tzName, dateString [,nowTimestamp] )
-
-convert( dateString, tzFromName, tzToName, format )
+return a modified timestamp that when formatted as GMT will display the
+time correctly formatted for the timezone.  The timezone name must be
+handled separately.
 
 
 Related
@@ -50,6 +52,6 @@ Related
 - [`phpdate-js`] - fast datetime formatting
 
 - `/bin/date +%Z @0`
-- `/etc/timzone`
+- `/etc/timezone`
 - `/usr/share/zoneinfo`
 - `tzselect(1)`
