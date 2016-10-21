@@ -47,7 +47,7 @@ handled separately.
 convert the time specification to a Date.  The time spec can be anything `date
 --date` can parse, like "+2 hours" or "3 weeks ago" or "9pm last Friday".
 
-### startOf( timestamp, units ) ?
+### startOf( timestamp, unit ) ?
 
 return the Date corresponding to the timestamp at the start of the named unit.
 Unit can be any time division listed under `adjust()` above, eg 'month', 'week',
