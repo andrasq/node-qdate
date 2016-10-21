@@ -142,6 +142,7 @@ module.exports = {
     getTimezoneList: null,
 }
 
+// aliases
 module.exports.getTimezoneAbbrev = module.exports.abbrev;
 module.exports.getTimezoneOffset = module.exports.offset;
 module.exports.getTimezoneList = module.exports.list;

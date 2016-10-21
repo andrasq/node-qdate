@@ -61,7 +61,7 @@ Related
 - tzname(3)
 - strftime(3)
 
-- [`phpdate-js`] - fast datetime formatting
+- [`phpdate-js`](https://github.com/andrasq/phpdate-js) - fast datetime formatting
 
 - `/bin/date +%Z @0`
 - `/etc/timezone`
