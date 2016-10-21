@@ -1,11 +1,11 @@
 qtz
 ===
 
-Small and light timezone functions
+Quick, small and light timezone functions
 
 Unlike other timezone packages that drag along their own timezone
 database, `qtz` leverages the host system's native timezone support.
-This makes it both faster and much smaller
+This makes it much smaller and rather fast.
 
 Summary
 -------
@@ -40,6 +40,22 @@ return the offset as minutes west of GMT of the named timezone
 return a modified timestamp that when formatted as GMT will display the
 time correctly formatted for the timezone.  The timezone name must be
 handled separately.
+
+### list( ), getTimezoneList
+
+return the list of known timezone names as an array of strings
+
+### adjust( timestamp, delta, units )
+
+adjust the timestamp by +/- delta units.  Units may be one of 'year', 'month',
+'week', 'day', 'hour', 'minute' or 'second' or 'millisecond'.
+
+### strtotime( timespec [,tzName] )
+
+convert the time specification to a Date.  The time spec can be anything `date
+--date` can parse, like "+2 hours" or "3 weeks ago" or "9pm last Friday".
+
+### format ?
 
 
 Related
