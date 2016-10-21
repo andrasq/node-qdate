@@ -71,6 +71,7 @@ module.exports = {
     },
 
     list: function list( ) {
+        // note: this call could be slow, and is blocking, call only during setup
         var files = child_process.execSync(
             "find /usr/share/zoneinfo/ -type f | xargs file | grep timezone | cut -d: -f1 | cut -b21- | grep '^[A-Z]'");
         files = files.toString().trim().split("\n");

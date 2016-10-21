@@ -5,7 +5,10 @@ Quick, small and light timezone functions
 
 Unlike other timezone packages that drag along their own timezone
 database, `qtz` leverages the host system's native timezone support.
-This makes it much smaller and rather fast.
+This makes it much smaller and pretty fast.
+
+This is a work in progress.
+
 
 Summary
 -------
