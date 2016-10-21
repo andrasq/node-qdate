@@ -49,13 +49,13 @@ var unitsMap = {
 
 module.exports = {
     abbrev: function abbrev( tzName ) {
-        var cmdline = (tzName ? "env TZ='" + tzName + "' " : "") + "date +%Z";
+        var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date +%Z";
         return child_process.execSync(cmdline).toString().trim();
     },
 
     offset: function offset( tzName ) {
         if (tzOffsetCache[tzName] !== undefined) return tzOffsetCache[tzName];
-        var cmdline = (tzName ? "env TZ='" + tzName + "' " : "") + "date +%z";
+        var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date +%z";
         var tzOffset = parseInt(child_process.execSync(cmdline));
         if (tzOffset < 0) {
             return tzOffsetCache[tzName] = ( 60 * Math.floor(-tzOffset / 100) - -tzOffset % 100 );
@@ -111,7 +111,7 @@ module.exports = {
 
     strtotime: function strtotime( timespec, tzName ) {
         if (typeof timespec !== 'string') throw new Error("timespec must be a string not " + (typeof timespec));
-        var cmdline = (tzName ? "env TZ='" + tzName + "' " : "") + "date --date='" + timespec + "'";
+        var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date --date=\"" + this._escapeString(timespec) + "\"";
         var timestamp = this._runCommand(cmdline);
         return (typeof timestamp === 'string') ? new Date(timestamp) : null;
     },
@@ -123,6 +123,10 @@ module.exports = {
     _runCommand: function _runCommand( cmdline ) {
         try { return child_process.execSync(cmdline).toString(); }
         catch (err) { return err; }
+    },
+
+    _escapeString: function _escapeString( str ) {
+        return str.replace('"', '\\"');
     },
 
     _splitDate: function _splitDate( dt, tzName ) {

@@ -36,18 +36,18 @@ return the Date corresponding to the timestamp adjusted by +/- delta units.  Uni
 may be one of 'year', 'month', 'week', 'day', 'hour', 'minute' or 'second' or
 'millisecond'.
 
-### convert( timestamp, tzFromName, tzToName ) ??
-
-return a modified timestamp that when formatted as GMT will display the
-time correctly formatted for the timezone.  The timezone name must be
-handled separately.
-
 ### strtotime( timespec [,tzName] )
 
 convert the time specification to a Date.  The time spec can be anything `date
 --date` can parse, like "+2 hours" or "3 weeks ago" or "9pm last Friday".
 
-### startOf( timestamp, unit ) ?
+##### convert( timestamp, tzFromName, tzToName ) ??
+
+return a modified timestamp that when formatted as GMT will display the
+time correctly formatted for the timezone.  The timezone name must be
+handled separately.
+
+##### startOf( timestamp, unit ) ?
 
 return the Date corresponding to the timestamp at the start of the named unit.
 Unit can be any time division listed under `adjust()` above, eg 'month', 'week',
