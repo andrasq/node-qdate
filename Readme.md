@@ -21,25 +21,10 @@ Api
 
 return the three-character timezone abbreviation of the named timezone
 
-    return child_process.execSync("env TZ='" + tzName + "' date +%Z");
-
-    // #include <time.h>
-    // tzset();
-    // return tzname[0], tzname[1] ([0] is EST, [1] is EDT; `daylight` is set if toggles dst)
-
 ### offset( tzName ), getTimezoneOffset
 
-return the offset as minutes west of GMT of the named timezone
-
-    var tzOffset = parseInt(child_process.execSync("env TZ='" + tzName + "' date +%z"));
-    if (tzOffset < 0) return ( 60 * Math.floor(-tzOffset / 100) - -tzOffset % 100 );
-    else return -( 60 * Math.floor(tzOffset / 100) + tzOffset % 100 );
-
-### convert( timestamp, tzFromName, tzToName )
-
-return a modified timestamp that when formatted as GMT will display the
-time correctly formatted for the timezone.  The timezone name must be
-handled separately.
+return the offset as minutes west of GMT of the named timezone.  This is what
+`new Date().getTimezoneOffset()` does for the default timezone.
 
 ### list( ), getTimezoneList
 
@@ -47,15 +32,26 @@ return the list of known timezone names as an array of strings
 
 ### adjust( timestamp, delta, units )
 
-adjust the timestamp by +/- delta units.  Units may be one of 'year', 'month',
-'week', 'day', 'hour', 'minute' or 'second' or 'millisecond'.
+return the Date corresponding to the timestamp adjusted by +/- delta units.  Units
+may be one of 'year', 'month', 'week', 'day', 'hour', 'minute' or 'second' or
+'millisecond'.
+
+### convert( timestamp, tzFromName, tzToName ) ??
+
+return a modified timestamp that when formatted as GMT will display the
+time correctly formatted for the timezone.  The timezone name must be
+handled separately.
 
 ### strtotime( timespec [,tzName] )
 
 convert the time specification to a Date.  The time spec can be anything `date
 --date` can parse, like "+2 hours" or "3 weeks ago" or "9pm last Friday".
 
-### format ?
+### startOf( timestamp, units ) ?
+
+return the Date corresponding to the timestamp at the start of the named unit.
+Unit can be any time division listed under `adjust()` above, eg 'month', 'week',
+'hour'.
 
 
 Related
