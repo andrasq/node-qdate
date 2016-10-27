@@ -32,10 +32,12 @@ var tzAliasMap = {
     HAST: 'US/Aleutian', HADT: 'US/Aleutian',                   // 1000
 };
 var unitNamesMap = {
+    // TODO: do not abbreviate
     year: 'Y', years: 'Y', yr: 'Y', yrs: 'Y', Y: 'Y', y: 'Y',
     week: 'w', weeks: 'w', wk: 'w', wks: 'w',
 };
 var unitsMap = {
+    // TODO: map to numeric offsets into components array, simplifies startOf
     year: 'yr',         years: 'yr',        Y: 'yr', y: 'yr', yr: 'yr', yrs: 'yr',
     month: 'mo',        months: 'mo',       M: 'mo',          mo: 'mo', mos: 'mo',
     day: 'dt',          days: 'dt',         D: 'dt', d: 'dt', date: 'dt',
@@ -95,13 +97,13 @@ module.exports = {
         return new Date(hms.yr, hms.mo, hms.dt, hms.h, hms.m, hms.s, hms.ms);
     },
 
-    startOf: function startOf( timestamp, units ) {
-        if (!unitsMap[units]) throw new Error("unrecognized units: " + units);
+    startOf: function startOf( timestamp, unit ) {
+        if (!unitsMap[unit]) throw new Error("unrecognized unit: " + unit);
         var dt = timestamp instanceof Date ? timestamp : new Date(timestamp);
         var hms = this._splitDate(dt);
 
         // start of week 
-        if (unitNamesMap[units] === 'w') {
+        if (unitNamesMap[unit] === 'w') {
             var day = dt.getDay();
             hms.dt -= day;
             hms.h = 0;
