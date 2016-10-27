@@ -49,11 +49,13 @@ var unitsMap = {
 
 module.exports = {
     abbrev: function abbrev( tzName ) {
+        if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
         var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date +%Z";
         return child_process.execSync(cmdline).toString().trim();
     },
 
     offset: function offset( tzName ) {
+        if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
         if (tzOffsetCache[tzName] !== undefined) return tzOffsetCache[tzName];
         var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date +%z";
         var tzOffset = parseInt(child_process.execSync(cmdline));
@@ -65,6 +67,8 @@ module.exports = {
     },
 
     convert: function convert( timestamp, tzFromName, tzToName, format ) {
+        if (tzAliasMap[tzFromName]) tzFromName = tzAliasMap(tzFromName);
+        if (tzAliasMap[tzToName]) tzToName = tzAliasMap(tzToName);
         if (typeof timestamp !== 'number') timestamp = new Date(timestamp).getTime();
         // FIXME:
         // ??? return timestamp + 60000 * (this.offset(tzToName) - this.offset(tzFromName));
@@ -111,6 +115,7 @@ module.exports = {
     },
 
     strtotime: function strtotime( timespec, tzName ) {
+        if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
         if (typeof timespec !== 'string') throw new Error("timespec must be a string not " + (typeof timespec));
         var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date --date=\"" + this._escapeString(timespec) + "\"";
         var timestamp = this._runCommand(cmdline);
@@ -119,6 +124,7 @@ module.exports = {
 
     format: function format( timestamp, format, tzName ) {
         // TBD - use phpdate-js
+        if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
     },
 
     _runCommand: function _runCommand( cmdline ) {
