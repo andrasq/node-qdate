@@ -44,12 +44,18 @@ may be one of 'year', 'month', 'week', 'day', 'hour', 'minute' or 'second' or
 convert the time specification to a Date.  The time spec can be anything `date
 --date` can parse, like "+2 hours" or "3 weeks ago" or "9pm last Friday".
 
-##### convert( timestamp, tzFromName, tzToName, [format] ) ?
+##### ? format( timestamp [,tzName] )
+
+format the timestamp in the named timezone locale.
+Formatting by `phpdate`
+
+
+##### ? convert( timestamp, tzFromName, tzToName, [format] )
 
 convert the timestamp between timezones, and return a reformatted timestamp.
-Formatting (tbd) by `phpdate`
+Formatting by `phpdate`
 
-##### startOf( timestamp, unit ) ?
+##### ? startOf( timestamp, unit )
 
 return the Date corresponding to the timestamp at the start of the named unit.
 Unit can be any time division listed under `adjust()` above, eg 'month', 'week',
@@ -65,6 +71,7 @@ Todo
 Change Log
 ----------
 
+- 0.0.3 - depend on phpdate-js
 - 0.0.2 - rename to `qdate`, test (tbd) with qnit
 - 0.0.1 - adjust(), strtotime(), tz abbrev, tz offset, list all known tz names
 

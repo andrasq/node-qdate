@@ -57,6 +57,7 @@ module.exports = {
     offset: function offset( tzName ) {
         if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
         if (tzOffsetCache[tzName] !== undefined) return tzOffsetCache[tzName];
+
         var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date +%z";
         var tzOffset = parseInt(child_process.execSync(cmdline));
         if (tzOffset < 0) {
