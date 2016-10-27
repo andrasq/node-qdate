@@ -1,11 +1,10 @@
 qdate
 =====
 
-Quick, small and light date conversion functions.
+Small, light and quick handy date conversion functions.
 
-Unlike other timezone packages that drag along their own timezone
-database, `qdate` leverages the host system's native timezone support.
-This makes it much smaller and pretty fast.
+Unlike timezone packages that drag along their own timezone database, `qdate`
+leverages the host system's native timezone support, making it much smaller.
 
 This is a work in progress.
 

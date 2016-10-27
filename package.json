@@ -8,7 +8,7 @@
   "repository": {
     "url": "git://github.com/andrasq/node-qdate.git"
   },
-  "keywords": [ "date", "adjust", "Andras", "timezone" ],
+  "keywords": [ "date", "adjust", "convert", "Andras", "timezone" ],
   "scripts": {
     "tbd-coverage": "nyc --cache qnit test-*",
     "tbd-test": "qnit test-*"
