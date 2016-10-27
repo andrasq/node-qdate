@@ -156,23 +156,23 @@ module.exports.getTimezoneList = module.exports.list;
 ///** quicktest:
 
 var timeit = require('qtimeit');
-var qtz = module.exports;
+var qdate = module.exports;
 
-//console.log(new Date( qtz.adjust("2016-10-13 01:23:45.678", +1, "weeks") ));
-//console.log(new Date( qtz.adjust(new Date(), +4, "weeks") ));
+//console.log(new Date( qdate.adjust("2016-10-13 01:23:45.678", +1, "weeks") ));
+//console.log(new Date( qdate.adjust(new Date(), +4, "weeks") ));
 
 var x, dt = new Date();
 
-//timeit(100000, function(){ x = qtz.adjust("2016-10-13 01:23:45.678", +1, "weeks") });
+//timeit(100000, function(){ x = qdate.adjust("2016-10-13 01:23:45.678", +1, "weeks") });
 // 760k/s v6.2.2, 1.15m/s v5.10.1, v0.10.42
-//timeit(100000, function(){ x = qtz.adjust(dt, +1, "weeks") });
+//timeit(100000, function(){ x = qdate.adjust(dt, +1, "weeks") });
 // 1.6m/s v6.2.2, 1.8m/s v0.10.42, 1.85m/s v5.10.1
 //timeit(100000, function(){ x = new Date() });
 // 2.8m/s v6.2.2, 3.3m/s v0.10.42, 3.0m/s v5.10.1
-timeit(100000, function(){ x = qtz.startOf(dt, 'week') });
+timeit(100000, function(){ x = qdate.startOf(dt, 'week') });
 // 1.35m/s v6.2.2
 console.log(x, x.toString());
 
-console.log("AR:", qtz.strtotime("+2 hours"));
+console.log("AR:", qdate.strtotime("+2 hours"));
 
 /**/

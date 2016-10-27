@@ -1,10 +1,10 @@
-qtz
-===
+qdate
+=====
 
-Quick, small and light timezone functions
+Quick, small and light date conversion functions.
 
 Unlike other timezone packages that drag along their own timezone
-database, `qtz` leverages the host system's native timezone support.
+database, `qdate` leverages the host system's native timezone support.
 This makes it much smaller and pretty fast.
 
 This is a work in progress.
@@ -13,8 +13,8 @@ This is a work in progress.
 Summary
 -------
 
-    var qtz = require('qtz')
-    qtz.date('US/Eastern', 'Y-m-d H:i:s', Date.now());
+    var qdate = require('qdate')
+    qdate.adjust(new Date(), -30, 'minute');
 
 
 Api
@@ -57,15 +57,25 @@ Unit can be any time division listed under `adjust()` above, eg 'month', 'week',
 'hour'.
 
 
+Todo
+----
+
+- way to fetch the default timezone abbreviation (to use in formatting) `date +%Z`
+
+
+Change Log
+----------
+
+- 0.0.2 - rename to `qdate`, test (tbd) with qnit
+- 0.0.1 - adjust(), tz abbrev, tz offset, list all known tz names
+
 Related
 -------
 
 - ctime(3)
 - tzname(3)
 - strftime(3)
-
 - [`phpdate-js`](https://github.com/andrasq/phpdate-js) - fast datetime formatting
-
 - `/bin/date +%Z @0`
 - `/etc/timezone`
 - `/usr/share/zoneinfo`

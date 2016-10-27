@@ -1,12 +1,12 @@
 {
-  "name": "qtz",
-  "version": "0.0.1",
-  "main": "qtz.js",
+  "name": "qdate",
+  "version": "0.0.2",
+  "main": "qdate.js",
   "description": "quick little date converter",
   "author": "andras@andrasq.com",
   "license": "Apache-2.0",
   "repository": {
-    "url": "git://github.com/andrasq/node-qtz"
+    "url": "git://github.com/andrasq/node-qdate.git"
   },
   "keywords": ["date", "Andras", "timezone"],
   "scripts": {
@@ -14,6 +14,6 @@
     "tbd-test": "qnit test-*"
   },
   "devDependencies": {
-    "tbd-qnit": "^0.13.0"
+    "qnit": "0.13.0"
   }
 }
