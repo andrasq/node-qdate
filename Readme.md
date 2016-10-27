@@ -44,11 +44,10 @@ may be one of 'year', 'month', 'week', 'day', 'hour', 'minute' or 'second' or
 convert the time specification to a Date.  The time spec can be anything `date
 --date` can parse, like "+2 hours" or "3 weeks ago" or "9pm last Friday".
 
-##### convert( timestamp, tzFromName, tzToName ) ??
+##### convert( timestamp, tzFromName, tzToName, [format] ) ?
 
-return a modified timestamp that when formatted as GMT will display the
-time correctly formatted for the timezone.  The timezone name must be
-handled separately.
+convert the timestamp between timezones, and return a reformatted timestamp.
+Formatting (tbd) by `phpdate`
 
 ##### startOf( timestamp, unit ) ?
 
@@ -67,14 +66,14 @@ Change Log
 ----------
 
 - 0.0.2 - rename to `qdate`, test (tbd) with qnit
-- 0.0.1 - adjust(), tz abbrev, tz offset, list all known tz names
+- 0.0.1 - adjust(), strtotime(), tz abbrev, tz offset, list all known tz names
 
 Related
 -------
 
-- ctime(3)
-- tzname(3)
-- strftime(3)
+- `ctime(3)`
+- `tzname(3)`
+- `strftime(3)`
 - [`phpdate-js`](https://github.com/andrasq/phpdate-js) - fast datetime formatting
 - `/bin/date +%Z @0`
 - `/etc/timezone`
