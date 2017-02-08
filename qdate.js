@@ -20,6 +20,7 @@ function resetTzCache( ) {
 resetTzCache();
 setTimeout(function tzTimeout(){ resetTzCache(); setTimeout(tzTimeout, tzResetInterval).unref(); }, Date.now() % tzResetInterval).unref();
 
+// recognize the common North American timezone abbreviations
 var tzAliasMap = {
     NST: 'Canada/Newfoundland', NDT: 'Canada/Newfoundland',     // 330
     AST: 'Canada/Atlantic', ADT: 'Canada/Atlantic',             // 400
@@ -31,141 +32,154 @@ var tzAliasMap = {
     HST: 'US/Hawaii', HDT: 'US/Hawaii',                         // 1000, no daylight savings
     HAST: 'US/Aleutian', HADT: 'US/Aleutian',                   // 1000
 };
-var unitNamesMap = {
-    // TODO: do not abbreviate
-    year: 'Y', years: 'Y', yr: 'Y', yrs: 'Y', Y: 'Y', y: 'Y',
-    week: 'w', weeks: 'w', wk: 'w', wks: 'w',
-};
+
+// unit to split date offset mapping
 var unitsMap = {
-    // TODO: map to numeric offsets into components array, simplifies startOf
-    year: 'yr',         years: 'yr',        Y: 'yr', y: 'yr', yr: 'yr', yrs: 'yr',
-    month: 'mo',        months: 'mo',       M: 'mo',          mo: 'mo', mos: 'mo',
-    day: 'dt',          days: 'dt',         D: 'dt', d: 'dt', date: 'dt',
-    hour: 'h',          hours: 'h',         H: 'hr', h: 'hr', hr: 'h', hrs: 'h',
-    minute: 'm',        minutes: 'm',       m: 'm',           min: 'm', mins: 'm',
-    second: 's',        seconds: 's',       s: 's',  S: 's',  sec: 's', secs: 's',
-    millisecond: 'ms',  milliseconds: 'ms',                   ms: 'ms', millis: 'ms',
-    week: ['dt', 7],    weeks: ['dt', 7],   w: ['dt', 7],     wk: ['dt', 7],
+    year: 0,        years: 0,        yr: 0,  yrs: 0,
+    month: 1,       months: 1,       mo: 1,  mos: 1,
+    day: 2,         days: 2,         dy: 2,
+    hour: 3,        hours: 3,        hr: 3,  hrs: 3,
+    minute: 4,      minutes: 4,      min: 4, mins: 4,
+    second: 5,      seconds: 5,      sec: 5, secs: 5,
+    millisecond: 6, milliseconds: 6, ms: 6,
+
+    // weeks are mapped to ['week', days_offset, days_count]
+    week: ['week', 2, 7], weeks: ['week', 2, 7], wk: ['week', 2, 7], w: ['week', 2, 7], W: ['week', 2, 7],
 };
 
 
-module.exports = {
-    abbrev: function abbrev( tzName ) {
-        if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
-        var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date +%Z";
-        return child_process.execSync(cmdline).toString().trim();
-    },
+// export a date adjusting singleton
+module.exports = new QDate();
 
-    offset: function offset( tzName ) {
-        if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
-        if (tzOffsetCache[tzName] !== undefined) return tzOffsetCache[tzName];
 
-        var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date +%z";
-        var tzOffset = parseInt(child_process.execSync(cmdline));
-        if (tzOffset < 0) {
-            return tzOffsetCache[tzName] = ( 60 * Math.floor(-tzOffset / 100) - -tzOffset % 100 );
-        } else {
-            return tzOffsetCache[tzName] = -( 60 * Math.floor(tzOffset / 100) + tzOffset % 100 );
-        }
-    },
-
-    convert: function convert( timestamp, tzFromName, tzToName, format ) {
-        if (tzAliasMap[tzFromName]) tzFromName = tzAliasMap(tzFromName);
-        if (tzAliasMap[tzToName]) tzToName = tzAliasMap(tzToName);
-        if (typeof timestamp !== 'number') timestamp = new Date(timestamp).getTime();
-        // FIXME:
-        // ??? return timestamp + 60000 * (this.offset(tzToName) - this.offset(tzFromName));
-    },
-
-    list: function list( ) {
-        // note: this call could be slow, and is blocking, call only during setup
-        var files = child_process.execSync(
-            "find /usr/share/zoneinfo/ -type f | xargs file | grep timezone | cut -d: -f1 | cut -b21- | grep '^[A-Z]'");
-        files = files.toString().trim().split("\n");
-        return files;
-    },
-
-    adjust: function adjust( timestamp, delta, units ) {
-        if (!unitsMap[units]) throw new Error("unrecognized units: " + units);
-        var dt = timestamp instanceof Date ? timestamp : new Date(timestamp);
-        var hms = this._splitDate(dt);
-
-        var field = unitsMap[units];
-        if (typeof field === 'string') hms[field] += delta;
-        else hms[field[0]] += delta * field[1];  // field can be a [name, multipler] tuple
-
-        return new Date(hms.yr, hms.mo, hms.dt, hms.h, hms.m, hms.s, hms.ms);
-    },
-
-    startOf: function startOf( timestamp, unit ) {
-        if (!unitsMap[unit]) throw new Error("unrecognized unit '" + unit + "'");
-        var dt = timestamp instanceof Date ? timestamp : new Date(timestamp);
-        var hms = this._splitDate(dt);
-
-        // start of week 
-        if (unitNamesMap[unit] === 'w') {
-            var day = dt.getDay();
-            hms.dt -= day;
-            hms.h = 0;
-            hms.m = 0;
-            hms.s = 0;
-            hms.ms = 0;
-        }
-        else {
-            // zero out the lesser fields.  Months are 0-based, dates 1..
-        }
-        return new Date(hms.yr, hms.mo, hms.dt, hms.h, hms.m, hms.s, hms.ms);
-    },
-
-    strtotime: function strtotime( timespec, tzName ) {
-        if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
-        if (typeof timespec !== 'string') throw new Error("timespec must be a string not " + (typeof timespec));
-        var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date --date=\"" + this._escapeString(timespec) + "\"";
-        var timestamp = this._runCommand(cmdline);
-        return (typeof timestamp === 'string') ? new Date(timestamp) : null;
-    },
-
-    format: function format( timestamp, format, tzName ) {
-        // TBD - use phpdate-js
-        if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
-    },
-
-    _runCommand: function _runCommand( cmdline ) {
-        try { return child_process.execSync(cmdline).toString(); }
-        catch (err) { return err; }
-    },
-
-    _escapeString: function _escapeString( str ) {
-        return str.replace('"', '\\"');
-    },
-
-    _splitDate: function _splitDate( dt, tzName ) {
-        // the Date is split into components according to the system timezone, not utc
-        if (tzName) {
-            // FIXME: adjust for specified timezone
-        }
-        return {
-            yr: dt.getFullYear(), mo: dt.getMonth(), dt: dt.getDate(), h: dt.getHours(), m: dt.getMinutes(), s: dt.getSeconds(), ms: dt.getMilliseconds()
-        };
-        return [ dt.getFullYear(), dt.getMonth(), dt.getDate() - 1, dt.getHours(), dt.getMinutes(), dt.getSeconds(), dt.getMilliseconds() ];
-    },
-
-    _buildDate: function _buildDate( hms ) {
-        // days are 1-based, months, hours, minutes, etc all 0-based
-        return new Date(hms.yr, hms.mo, hms.dt + 1, hms.h, hms.m, hms.s, hms.ms);
-        return new Date(hms[0], hms[1], hms[2] + 1, hms[3], hms[4], hms[5], hms[6]);
-    },
-
-    // aliases
-    getTimezoneAbbrev: null,
-    getTimezoneOffset: null,
-    getTimezoneList: null,
+function QDate( ) {
 }
 
+QDate.prototype.abbrev = function abbrev( tzName ) {
+    if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
+    var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date +%Z";
+    return child_process.execSync(cmdline).toString().trim();
+}
+
+QDate.prototype.offset = function offset( tzName ) {
+    if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
+    if (tzOffsetCache[tzName] !== undefined) return tzOffsetCache[tzName];
+
+    var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date +%z";
+    var tzOffset = parseInt(child_process.execSync(cmdline));
+    if (tzOffset < 0) {
+        // javascript timezone offsets increase toward west of gmt, make positive
+        return tzOffsetCache[tzName] = ( 60 * Math.floor(-tzOffset / 100) - -tzOffset % 100 );
+    } else {
+        return tzOffsetCache[tzName] = -( 60 * Math.floor(tzOffset / 100) + tzOffset % 100 );
+    }
+},
+
+QDate.prototype.convert = function convert( timestamp, tzFromName, tzToName, format ) {
+    if (tzAliasMap[tzFromName]) tzFromName = tzAliasMap(tzFromName);
+    if (tzAliasMap[tzToName]) tzToName = tzAliasMap(tzToName);
+    if (typeof timestamp !== 'number') timestamp = new Date(timestamp).getTime();
+    // FIXME:
+    // ??? return timestamp + 60000 * (this.offset(tzToName) - this.offset(tzFromName));
+},
+
+QDate.prototype.list = function list( ) {
+    // note: this call could be slow, and is blocking, call only during setup
+    var files = child_process.execSync(
+        "find /usr/share/zoneinfo/ -type f | xargs file | grep timezone | cut -d: -f1 | cut -b21- | grep '^[A-Z]'");
+    files = files.toString().trim().split("\n");
+    return files;
+},
+
+QDate.prototype.adjust = function adjust( timestamp, delta, units ) {
+    if (!unitsMap[units]) throw new Error(units + ": unrecognized unit");
+    var dt = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    var hms = this._splitDate(dt);
+
+    var field = unitsMap[units];
+    if (field >= 0) hms[field] += delta;            // field
+    else hms[field[1]] += delta * field[2];         // [field, multiplier] tuple
+
+    return this._buildDate(hms);
+},
+
+QDate.prototype.following = function following( timestamp, unit ) {
+    return this.startOf(this.adjust(timestamp, +1, unit), unit);
+},
+
+QDate.prototype.previous = function previous( timestamp, unit ) {
+    return this.startOf(this.adjust(timestamp, -1, unit), unit);
+},
+
+QDate.prototype.startOf = function startOf( timestamp, unit ) {
+    if (!unitsMap[unit]) throw new Error(unit + ": unrecognized unit");
+    var dt = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    var hms = this._splitDate(dt);
+
+    var field = unitsMap[unit];
+    if (field >= 0) {
+        ;
+    }
+    else if (field[0] === 'week') {
+        field = 2;
+        hms[field] -= dt.getDay();
+    }
+    for (var i=field+1; i<hms.length; i++) hms[field] = 0;
+
+    return this._buildDate(hms);
+},
+
+QDate.prototype.strtotime = function strtotime( timespec, tzName ) {
+    if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
+    if (typeof timespec !== 'string') throw new Error("timespec must be a string not " + (typeof timespec));
+    var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date --date=\"" + this._escapeString(timespec) + "\"";
+    var timestamp = this._runCommand(cmdline);
+    return (typeof timestamp === 'string') ? new Date(timestamp) : null;
+},
+
+QDate.prototype.format = function format( timestamp, format, tzName ) {
+    // TBD - use phpdate-js
+    if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
+},
+
+QDate.prototype._runCommand = function _runCommand( cmdline ) {
+    try { return child_process.execSync(cmdline).toString(); }
+    catch (err) { return err; }
+},
+
+QDate.prototype._escapeString = function _escapeString( str ) {
+    return str.replace('"', '\\"');
+},
+
+QDate.prototype._splitDate = function _splitDate( dt, tzName ) {
+    // the Date is split into components according to the system timezone, not utc
+    if (tzName) {
+        // FIXME: adjust for specified timezone
+    }
+    return [ dt.getFullYear(), dt.getMonth(), dt.getDate() - 1, dt.getHours(), dt.getMinutes(), dt.getSeconds(), dt.getMilliseconds() ];
+},
+
+QDate.prototype._buildDate = function _buildDate( hms ) {
+    // days are 1-based, months, hours, minutes, etc all 0-based
+    return new Date(hms[0], hms[1], hms[2] + 1, hms[3], hms[4], hms[5], hms[6]);
+},
+
+    // aliases
+QDate.prototype.getTimezoneAbbrev = null;
+QDate.prototype.getTimezoneOffset = null;
+QDate.prototype.getTimezoneList = null;
+
+
 // aliases
-module.exports.getTimezoneAbbrev = module.exports.abbrev;
-module.exports.getTimezoneOffset = module.exports.offset;
-module.exports.getTimezoneList = module.exports.list;
+
+QDate.prototype.getTimezoneAbbrev = QDate.prototype.abbrev;
+QDate.prototype.getTimezoneOffset = QDate.prototype.offset;
+QDate.prototype.getTimezoneList = QDate.prototype.list;
+QDate.prototype.current = QDate.prototype.startOf;
+QDate.prototype.next = QDate.prototype.following;
+QDate.prototype.last = QDate.prototype.previous;
+
+QDate.prototype = QDate.prototype;
 
 
 ///** quicktest:
@@ -173,10 +187,11 @@ module.exports.getTimezoneList = module.exports.list;
 var timeit = require('qtimeit');
 var qdate = module.exports;
 
+//console.log(new Date( qdate.adjust("2016-01-01 00:00:00.001", +1, "weeks") ));
 //console.log(new Date( qdate.adjust("2016-10-13 01:23:45.678", +1, "weeks") ));
 //console.log(new Date( qdate.adjust(new Date(), +4, "weeks") ));
 
-var x, dt = new Date();
+var x = 0, dt = new Date();
 
 //timeit(100000, function(){ x = qdate.adjust("2016-10-13 01:23:45.678", +1, "weeks") });
 // 760k/s v6.2.2, 1.15m/s v5.10.1, v0.10.42
@@ -186,7 +201,7 @@ var x, dt = new Date();
 // 2.8m/s v6.2.2, 3.3m/s v0.10.42, 3.0m/s v5.10.1
 //timeit(100000, function(){ x = qdate.startOf(dt, 'week') });
 // 1.35m/s v6.2.2
-timeit(100000, function(){ x = qdate.following(dt, 'week') });
+//timeit(100000, function(){ x = qdate.following(dt, 'week') });
 // 855k/s v6.9.1, 580k/s v7.0.0 (?!?)
 
 console.log("AR: got", x, x.toString());

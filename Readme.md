@@ -36,12 +36,28 @@ return the list of known timezone names as an array of strings
 
 return the Date corresponding to the timestamp adjusted by +/- delta units.  Unit
 may be one of 'year', 'month', 'week', 'day', 'hour', 'minute', 'second' or
-'millisecond'.
+'millisecond'.  Plurals and some common abbreviations are allowed.
 
 ### strtotime( timespec [,tzName] )
 
 convert the time specification to a Date.  The time spec can be anything `date
 --date` can parse, like "+2 hours" or "3 weeks ago" or "9pm last Friday".
+
+### startOf( timestamp, unit )
+
+return the Date corresponding to the start of the current unit.  Unit may be any
+one of the time divisions listed under `adjust()`, eg 'year', 'month', 'week',
+etc.
+
+### following( timestamp, unit )
+
+return the Date corresponding to the start of the named unit following the current.
+Unit as in `adjust`.
+
+### previous( timestamp, unit ) 
+
+return the Date corresponding to the start of the named unit preceding the current.
+Unit as in `adjust`.
 
 ##### ? format( timestamp [,tzName] )
 
@@ -54,12 +70,6 @@ Formatting by `phpdate`
 convert the timestamp between timezones, and return a reformatted timestamp.
 Formatting by `phpdate`
 
-##### ? startOf( timestamp, unit ), current
-
-return the Date corresponding to the timestamp at the start of the current unit.
-Unit may be any of the time divisions listed under `adjust()`, eg 'year', 'month',
-'week', 'day', etc.
-
 
 Todo
 ----
@@ -70,6 +80,7 @@ Todo
 Change Log
 ----------
 
+- 0.0.4 - refactor into a singleton, split into an array, startOf, previous, following methods
 - 0.0.3 - depend on phpdate-js
 - 0.0.2 - rename to `qdate`, test (tbd) with qnit
 - 0.0.1 - adjust(), strtotime(), tz abbrev, tz offset, list all known tz names
