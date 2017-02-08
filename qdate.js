@@ -98,7 +98,7 @@ module.exports = {
     },
 
     startOf: function startOf( timestamp, unit ) {
-        if (!unitsMap[unit]) throw new Error("unrecognized unit: " + unit);
+        if (!unitsMap[unit]) throw new Error("unrecognized unit '" + unit + "'");
         var dt = timestamp instanceof Date ? timestamp : new Date(timestamp);
         var hms = this._splitDate(dt);
 
@@ -147,7 +147,13 @@ module.exports = {
         return {
             yr: dt.getFullYear(), mo: dt.getMonth(), dt: dt.getDate(), h: dt.getHours(), m: dt.getMinutes(), s: dt.getSeconds(), ms: dt.getMilliseconds()
         };
-        return [ dt.getFullYear(), dt.getMonth(), dt.getDate(), dt.getHours(), dt.getMinutes(), dt.getSeconds(), dt.getMilliseconds() ];
+        return [ dt.getFullYear(), dt.getMonth(), dt.getDate() - 1, dt.getHours(), dt.getMinutes(), dt.getSeconds(), dt.getMilliseconds() ];
+    },
+
+    _buildDate: function _buildDate( hms ) {
+        // days are 1-based, months, hours, minutes, etc all 0-based
+        return new Date(hms.yr, hms.mo, hms.dt + 1, hms.h, hms.m, hms.s, hms.ms);
+        return new Date(hms[0], hms[1], hms[2] + 1, hms[3], hms[4], hms[5], hms[6]);
     },
 
     // aliases
@@ -178,9 +184,14 @@ var x, dt = new Date();
 // 1.6m/s v6.2.2, 1.8m/s v0.10.42, 1.85m/s v5.10.1
 //timeit(100000, function(){ x = new Date() });
 // 2.8m/s v6.2.2, 3.3m/s v0.10.42, 3.0m/s v5.10.1
-timeit(100000, function(){ x = qdate.startOf(dt, 'week') });
+//timeit(100000, function(){ x = qdate.startOf(dt, 'week') });
 // 1.35m/s v6.2.2
-console.log(x, x.toString());
+timeit(100000, function(){ x = qdate.following(dt, 'week') });
+// 855k/s v6.9.1, 580k/s v7.0.0 (?!?)
+
+console.log("AR: got", x, x.toString());
+// note: Date stringifies with toString if first arg of console.log, with toJSON if second arg
+// actual serialization depends on nodejs version, node before v6 didn't do toJSON
 
 console.log("AR:", qdate.strtotime("+2 hours"));
 

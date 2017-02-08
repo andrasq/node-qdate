@@ -32,10 +32,10 @@ return the offset as minutes west of GMT of the named timezone.  This is what
 
 return the list of known timezone names as an array of strings
 
-### adjust( timestamp, delta, units )
+### adjust( timestamp, delta, unit )
 
-return the Date corresponding to the timestamp adjusted by +/- delta units.  Units
-may be one of 'year', 'month', 'week', 'day', 'hour', 'minute' or 'second' or
+return the Date corresponding to the timestamp adjusted by +/- delta units.  Unit
+may be one of 'year', 'month', 'week', 'day', 'hour', 'minute', 'second' or
 'millisecond'.
 
 ### strtotime( timespec [,tzName] )
@@ -54,11 +54,11 @@ Formatting by `phpdate`
 convert the timestamp between timezones, and return a reformatted timestamp.
 Formatting by `phpdate`
 
-##### ? startOf( timestamp, unit )
+##### ? startOf( timestamp, unit ), current
 
-return the Date corresponding to the timestamp at the start of the named unit.
-Unit can be any time division listed under `adjust()` above, eg 'month', 'week',
-'hour'.
+return the Date corresponding to the timestamp at the start of the current unit.
+Unit may be any of the time divisions listed under `adjust()`, eg 'year', 'month',
+'week', 'day', etc.
 
 
 Todo
