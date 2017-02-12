@@ -1,7 +1,7 @@
 /**
  * simple timezone and datetime adjustment functions
  *
- * Copyright (C) 2016 Andras Radics
+ * Copyright (C) 2016-2017 Andras Radics
  * Licensed under the Apache License, Version 2.0
  *
  * 2016-10-11 - Started.
@@ -85,6 +85,7 @@ QDate.prototype.convert = function convert( timestamp, tzFromName, tzToName, for
 
 QDate.prototype.list = function list( ) {
     // note: this call could be slow, and is blocking, call only during setup
+    // TODO: make work on platforms, eg /usr/lib/zoneinfo
     var files = child_process.execSync(
         "find /usr/share/zoneinfo/ -type f | xargs file | grep timezone | cut -d: -f1 | cut -b21- | grep '^[A-Z]'");
     files = files.toString().trim().split("\n");
@@ -124,6 +125,8 @@ QDate.prototype.startOf = function startOf( timestamp, unit ) {
         field = 2;
         hms[field] -= dt.getDay();
     }
+
+    // zero out all smaller units
     for (var i=field+1; i<hms.length; i++) hms[field] = 0;
 
     return this._buildDate(hms);
@@ -133,7 +136,7 @@ QDate.prototype.strtotime = function strtotime( timespec, tzName ) {
     if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
     if (typeof timespec !== 'string') throw new Error("timespec must be a string not " + (typeof timespec));
     var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date --date=\"" + this._escapeString(timespec) + "\"";
-    var timestamp = this._runCommand(cmdline);
+    var timestamp = this._tryCommand(cmdline);
     return (typeof timestamp === 'string') ? new Date(timestamp) : null;
 },
 
@@ -142,13 +145,13 @@ QDate.prototype.format = function format( timestamp, format, tzName ) {
     if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
 },
 
-QDate.prototype._runCommand = function _runCommand( cmdline ) {
+QDate.prototype._tryCommand = function _tryCommand( cmdline ) {
     try { return child_process.execSync(cmdline).toString(); }
     catch (err) { return err; }
 },
 
 QDate.prototype._escapeString = function _escapeString( str ) {
-    return str.replace('"', '\\"');
+    return str.replace('\\', '\\\\').replace('"', '\\"');
 },
 
 QDate.prototype._splitDate = function _splitDate( dt, tzName ) {
@@ -157,6 +160,7 @@ QDate.prototype._splitDate = function _splitDate( dt, tzName ) {
         // FIXME: adjust for specified timezone
     }
     return [ dt.getFullYear(), dt.getMonth(), dt.getDate() - 1, dt.getHours(), dt.getMinutes(), dt.getSeconds(), dt.getMilliseconds() ];
+    // getMmonth returns 0..11, getDay 1..31
 },
 
 QDate.prototype._buildDate = function _buildDate( hms ) {
@@ -164,7 +168,7 @@ QDate.prototype._buildDate = function _buildDate( hms ) {
     return new Date(hms[0], hms[1], hms[2] + 1, hms[3], hms[4], hms[5], hms[6]);
 },
 
-    // aliases
+// aliases
 QDate.prototype.getTimezoneAbbrev = null;
 QDate.prototype.getTimezoneOffset = null;
 QDate.prototype.getTimezoneList = null;
@@ -197,12 +201,19 @@ var x = 0, dt = new Date();
 // 760k/s v6.2.2, 1.15m/s v5.10.1, v0.10.42
 //timeit(100000, function(){ x = qdate.adjust(dt, +1, "weeks") });
 // 1.6m/s v6.2.2, 1.8m/s v0.10.42, 1.85m/s v5.10.1
+// 1.47m/s Skylake, 1.93m/s v5.10.1
 //timeit(100000, function(){ x = new Date() });
 // 2.8m/s v6.2.2, 3.3m/s v0.10.42, 3.0m/s v5.10.1
+// 4.85m/s v6.7.0 Skylake, 3.85m/s v0.10.42
 //timeit(100000, function(){ x = qdate.startOf(dt, 'week') });
 // 1.35m/s v6.2.2
 //timeit(100000, function(){ x = qdate.following(dt, 'week') });
 // 855k/s v6.9.1, 580k/s v7.0.0 (?!?)
+// 685k/s v6.7.0 Skylake
+//timeit(100000, function(){ x = qdate.previous(dt, 'week') });
+// 685k/s v6.7.0 Skylake
+//timeit(100000, function(){ x = new Date(1, 2, 3, 4, 5, 6, 7) })
+// 4m/s v6.7.0 Skylake, 3.62m/s v7.5.0
 
 console.log("AR: got", x, x.toString());
 // note: Date stringifies with toString if first arg of console.log, with toJSON if second arg
