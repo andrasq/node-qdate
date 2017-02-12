@@ -35,6 +35,21 @@ var tzAliasMap = {
     HAST: 'US/Aleutian', HADT: 'US/Aleutian',                   // 1000
 };
 
+// TODO: probe whether US/Eastern is a recognized timezone name
+// else look up in canonical map
+var useCanonicalNames = false;
+
+// map linux-only eg US/Eastern to canonical timezone names
+var tzCanonicalMap = {
+    'US/Eastern': 'America/New_York',
+    'US/Central': 'America/Chicago',
+    'US/Moutain': 'America/Boise',
+    'US/Pacific': 'America/Los_Angeles',
+    'US/Alaska': 'America/Juneau',
+    'US/Hawaii': 'Pacific/Honolulu',
+    'US/Aleutian': 'Pacific/Honolulu',
+};
+
 // unit to split date offset mapping
 var unitsMap = {
     year: 0,        years: 0,        yr: 0,  yrs: 0,
@@ -55,6 +70,7 @@ module.exports = new QDate();
 
 
 function QDate( ) {
+    this.envCommand = "env";            // /usr/bin/env
     this.tzAbbrevCommand = "date +%Z";
     this.tzOffsetCommand = "date +%z";
     this.strtotimeCommand = 'date --date="%s"';
@@ -67,6 +83,7 @@ QDate.prototype.maybeTzEnv = function maybeTzEnv( tzName ) {
 
 QDate.prototype.lookupTzName = function lookupTzName( tzName ) {
     if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
+    if (useCanonicalNames && tzCanonicalMap[tzName]) tzName = tzCanonicalMap[tzName];
     return tzName;
 }
 
@@ -151,8 +168,8 @@ QDate.prototype.strtotime = function strtotime( timespec, tzName ) {
     tzName = this.lookupTzName(tzName);
     if (typeof timespec !== 'string') throw new Error("timespec must be a string not " + (typeof timespec));
     var cmdline = this.maybeTzEnv(tzName) + sprintf(this.strtotimeCommand, this._escapeString(timespec));
-    var timestamp = child_process.execSync(cmdline);
-    return (typeof timestamp === 'string') ? new Date(timestamp) : null;
+    var timestamp = child_process.execSync(cmdline).toString();
+    return new Date(timestamp);
 },
 
 QDate.prototype.format = function format( timestamp, format, tzName ) {
