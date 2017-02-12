@@ -1,6 +1,6 @@
 {
   "name": "qdate",
-  "version": "0.0.4",
+  "version": "0.1.0-dev",
   "main": "qdate.js",
   "description": "quick little date converter",
   "author": "andras@andrasq.com",
@@ -14,7 +14,8 @@
     "tbd-test": "qnit test-*"
   },
   "dependencies": {
-    "phpdate-js": "1.0"
+    "phpdate-js": "1.0",
+    "qprintf": "0.8.0"
   },
   "devDependencies": {
     "qnit": "0.13.0"

@@ -11,6 +11,8 @@
 
 var child_process = require('child_process');
 var phpdate = require('phpdate-js');
+var qprintf = require('qprintf');
+var sprintf = qprintf.sprintf;
 
 var tzResetInterval = 600000;           // reset cache every 10 min to track daylight savings
 var tzOffsetCache = null;               // cache of timezones minutes west of gmt
@@ -53,19 +55,32 @@ module.exports = new QDate();
 
 
 function QDate( ) {
+    this.tzAbbrevCommand = "date +%Z";
+    this.tzOffsetCommand = "date +%z";
+    this.strtotimeCommand = 'date --date="%s"';
+}
+
+QDate.prototype.maybeTzEnv = function maybeTzEnv( tzName ) {
+    if (!tzName) return '';
+    return this.envCommand + ' TZ="' + this._escapeString(tzName) + '" ';
+}
+
+QDate.prototype.lookupTzName = function lookupTzName( tzName ) {
+    if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
+    return tzName;
 }
 
 QDate.prototype.abbrev = function abbrev( tzName ) {
-    if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
-    var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date +%Z";
+    tzName = this.lookupTzName(tzName);
+    var cmdline = this.maybeTzEnv(tzName) + this.tzAbbrevCommand;
     return child_process.execSync(cmdline).toString().trim();
 }
 
 QDate.prototype.offset = function offset( tzName ) {
-    if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
+    tzName = this.lookupTzName(tzName);
     if (tzOffsetCache[tzName] !== undefined) return tzOffsetCache[tzName];
 
-    var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date +%z";
+    var cmdline = this.maybeTzEnv(tzName) + this.tzOffsetCommand;
     var tzOffset = parseInt(child_process.execSync(cmdline));
     if (tzOffset < 0) {
         // javascript timezone offsets increase toward west of gmt, make positive
@@ -76,8 +91,8 @@ QDate.prototype.offset = function offset( tzName ) {
 },
 
 QDate.prototype.convert = function convert( timestamp, tzFromName, tzToName, format ) {
-    if (tzAliasMap[tzFromName]) tzFromName = tzAliasMap(tzFromName);
-    if (tzAliasMap[tzToName]) tzToName = tzAliasMap(tzToName);
+    tzFromName = this.lookupTzName(tzFromName);
+    tzToName = this.lookupTzName(tzToName);
     if (typeof timestamp !== 'number') timestamp = new Date(timestamp).getTime();
     // FIXME:
     // ??? return timestamp + 60000 * (this.offset(tzToName) - this.offset(tzFromName));
@@ -98,8 +113,8 @@ QDate.prototype.adjust = function adjust( timestamp, delta, units ) {
     var hms = this._splitDate(dt);
 
     var field = unitsMap[units];
-    if (field >= 0) hms[field] += delta;            // field
-    else hms[field[1]] += delta * field[2];         // [field, multiplier] tuple
+    if (field >= 0) hms[field] += delta;        // field
+    else hms[field[1]] += delta * field[2];     // [field, multiplier] tuple eg ['week', 7, 2]
 
     return this._buildDate(hms);
 },
@@ -133,10 +148,10 @@ QDate.prototype.startOf = function startOf( timestamp, unit ) {
 },
 
 QDate.prototype.strtotime = function strtotime( timespec, tzName ) {
-    if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
+    tzName = this.lookupTzName(tzName);
     if (typeof timespec !== 'string') throw new Error("timespec must be a string not " + (typeof timespec));
-    var cmdline = (tzName ? "env TZ=\"" + this._escapeString(tzName) + "\" " : "") + "date --date=\"" + this._escapeString(timespec) + "\"";
-    var timestamp = this._tryCommand(cmdline);
+    var cmdline = this.maybeTzEnv(tzName) + sprintf(this.strtotimeCommand, this._escapeString(timespec));
+    var timestamp = child_process.execSync(cmdline);
     return (typeof timestamp === 'string') ? new Date(timestamp) : null;
 },
 
@@ -191,6 +206,9 @@ QDate.prototype = QDate.prototype;
 var timeit = require('qtimeit');
 var qdate = module.exports;
 
+console.log("AR: abbrev", qdate.abbrev("US/Pacific"));
+console.log("AR: offset", qdate.offset("US/Pacific"));
+
 //console.log(new Date( qdate.adjust("2016-01-01 00:00:00.001", +1, "weeks") ));
 //console.log(new Date( qdate.adjust("2016-10-13 01:23:45.678", +1, "weeks") ));
 //console.log(new Date( qdate.adjust(new Date(), +4, "weeks") ));
@@ -219,6 +237,6 @@ console.log("AR: got", x, x.toString());
 // note: Date stringifies with toString if first arg of console.log, with toJSON if second arg
 // actual serialization depends on nodejs version, node before v6 didn't do toJSON
 
-console.log("AR:", qdate.strtotime("+2 hours"));
+console.log("AR: +2 hrs", qdate.strtotime("+2 hours"));
 
 /**/
