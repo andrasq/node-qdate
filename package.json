@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "phpdate-js": "1.0",
-    "qprintf": "0.8.0"
+    "qprintf": "0.9.1"
   },
   "devDependencies": {
     "qnit": "0.13.0"
