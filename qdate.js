@@ -14,13 +14,35 @@ var phpdate = require('phpdate-js');
 var qprintf = require('qprintf');
 var sprintf = qprintf.sprintf;
 
+
+// export a date adjusting singleton
+module.exports = new QDate();
+
 var tzResetInterval = 600000;           // reset cache every 10 min to track daylight savings
-var tzOffsetCache = null;               // cache of timezones minutes west of gmt
+var state = {
+    tzOffsetCache: null,                // cache of timezones minutes west of gmt
+    tzTimer: null,
+    resetTzCache: resetTzCache,
+};
+
+// expose internals to testing
+module.exports._test = state;
+
 function resetTzCache( ) {
-    tzOffsetCache = { localtime: new Date().getTimezoneOffset() };
+    state.tzOffsetCache = { localtime: new Date().getTimezoneOffset() };
+
+    // uset a timeout not interval to better control drift
+    if (state.tzTimer) clearTimeout(state.tzTimer);
+    state.tzTimer = setTimeout(resetTzCache, nextResetMs(tzResetInterval)).unref();
 }
 resetTzCache();
-setTimeout(function tzTimeout(){ resetTzCache(); setTimeout(tzTimeout, tzResetInterval).unref(); }, Date.now() % tzResetInterval).unref();
+
+// number of ms until the next even 10 minutes
+function nextResetMs( interval ) {
+    var now = Date.now();
+    var next = interval - now % interval;
+    return next;
+}
 
 // recognize the common North American timezone abbreviations
 var tzAliasMap = {
@@ -65,10 +87,6 @@ var unitsMap = {
 };
 
 
-// export a date adjusting singleton
-module.exports = new QDate();
-
-
 function QDate( ) {
     this.envCommand = "env";            // /usr/bin/env
     this.tzAbbrevCommand = "date +%Z";
@@ -82,7 +100,7 @@ QDate.prototype.maybeTzEnv = function maybeTzEnv( tzName ) {
 }
 
 QDate.prototype.lookupTzName = function lookupTzName( tzName ) {
-    if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
+    if (tzAliasMap[tzName]) tzName = tzAliasMap[tzName];
     if (useCanonicalNames && tzCanonicalMap[tzName]) tzName = tzCanonicalMap[tzName];
     return tzName;
 }
@@ -95,15 +113,15 @@ QDate.prototype.abbrev = function abbrev( tzName ) {
 
 QDate.prototype.offset = function offset( tzName ) {
     tzName = this.lookupTzName(tzName);
-    if (tzOffsetCache[tzName] !== undefined) return tzOffsetCache[tzName];
+    if (state.tzOffsetCache[tzName] !== undefined) return state.tzOffsetCache[tzName];
 
     var cmdline = this.maybeTzEnv(tzName) + this.tzOffsetCommand;
     var tzOffset = parseInt(child_process.execSync(cmdline));
     if (tzOffset < 0) {
         // javascript timezone offsets increase toward west of gmt, make positive
-        return tzOffsetCache[tzName] = ( 60 * Math.floor(-tzOffset / 100) - -tzOffset % 100 );
+         return state.tzOffsetCache[tzName] = ( 60 * Math.floor(-tzOffset / 100) - -tzOffset % 100 );
     } else {
-        return tzOffsetCache[tzName] = -( 60 * Math.floor(tzOffset / 100) + tzOffset % 100 );
+        return state.tzOffsetCache[tzName] = -( 60 * Math.floor(tzOffset / 100) + tzOffset % 100 );
     }
 },
 

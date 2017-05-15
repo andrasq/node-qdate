@@ -9,6 +9,9 @@
     "url": "git://github.com/andrasq/node-qdate.git"
   },
   "keywords": [ "date", "adjust", "convert", "Andras", "timezone" ],
+  "engines": {
+    "node": ">= 0.11"
+  },
   "scripts": {
     "tbd-coverage": "nyc --cache qnit test-*",
     "tbd-test": "qnit test-*"
@@ -18,6 +21,11 @@
     "qprintf": "0.9.1"
   },
   "devDependencies": {
-    "qnit": "0.13.0"
+    "qnit": "0.15.1"
+  },
+  "scripts": {
+    "test": "qnit test-*",
+    "coverage": "nyc --reporter text --reporter lcov npm test",
+    "clean": "rm -rf .nyc_output coverage"
   }
 }

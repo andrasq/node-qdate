@@ -4,11 +4,7 @@
  */
 
 var qdate = require("./");
-
-///** quicktest:
-
 var timeit = require('qtimeit');
-var qdate = module.exports;
 
 console.log("AR: abbrev", qdate.abbrev("US/Pacific"));
 console.log("AR: offset", qdate.offset("US/Pacific"));
@@ -43,4 +39,98 @@ console.log("AR: got", x, x.toString());
 
 console.log("AR: +2 hrs", qdate.strtotime("+2 hours"));
 
-/**/
+
+module.exports = {
+    'abbrev': {
+        'should alias as getTimezoneAbbrev': function(t) {
+            t.equal(qdate.abbrev, qdate.getTimezoneAbbrev);
+            t.done();
+        },
+
+        'should look up timezone abbreviation': function(t) {
+            var tz = qdate.abbrev('America/Los_Angeles');
+            t.ok(tz == 'PDT' || tz == 'PST');
+            t.done();
+        },
+
+        'should cache abbrev': function(t) {
+            var t1 = Date.now();
+            var tz = qdate.abbrev('America/Los_Angeles');
+            var t2 = Date.now();
+            t.ok(t2 - t1 <= 2);
+            t.done();
+        },
+    },
+
+    'offset': {
+        'should alias as getTimezoneOffset': function(t) {
+            t.equal(qdate.offset, qdate.getTimezoneOffset);
+            t.done();
+        },
+
+        'should return timezone offset': function(t) {
+            var tz = qdate.abbrev('Europe/Bucharest');
+            var offs = qdate.offset('Europe/Bucharest');
+            t.equal(offs, tz == 'EEST' ? -180 : -120);          // summer time == daylight savings, +1 ahead
+            t.done();
+        },
+
+        'should cache offset': function(t) {
+            qdate.offset('America/Chicago');
+            t.ok(qdate._test.tzOffsetCache['America/Chicago']);
+            t.done();
+        },
+
+        'should look up tz aliases': function(t) {
+            var offs = qdate.offset('CDT');
+            t.ok(offs == 300 || offs == 360);
+            t.done();
+        },
+
+        'should reuse cached offset': function(t) {
+            qdate._test.tzOffsetCache['nonesuch'] = 'testing only';
+            var offs = qdate.offset('nonesuch');
+            t.equal(offs, 'testing only');
+            t.done();q
+        },
+
+        'reset should clear the cache': function(t) {
+            qdate._test.resetTzCache();
+            var cache1 = qdate._test.tzOffsetCache;
+            qdate._test.resetTzCache();
+            var cache2 = qdate._test.tzOffsetCache;
+            t.ok(cache1 != cache2);
+            t.done();
+        },
+
+        'reset should clear the timer': function(t) {
+            var spy = t.spy(global, 'clearTimeout');
+            var timer = qdate._test.tzTimer;
+            qdate._test.resetTzCache();
+            spy.restore();
+            t.equal(spy.callCount, 1);
+            t.deepEqual(spy.args[0], [timer]);
+            t.done();
+        },
+
+        'should expire tzOffsetCache in 10 minutes': function(t) {
+            var clock = t.mockTimers();
+            qdate._test.resetTzCache();
+            qdate.offset('America/Chicago');
+            t.ok(qdate._test.tzOffsetCache['America/Chicago']);
+            clock.tick(600001);
+            t.unmockTimers();
+            t.ok(!qdate._test.tzOffsetCache['America/Chicago']);
+            t.done();
+        },
+    },
+
+    'list': {
+        'should list known timezones names': function(t) {
+            var list = qdate.list();
+            t.ok(Array.isArray(list));
+            t.ok(list.length > 100);
+            t.done();
+        },
+    },
+}
