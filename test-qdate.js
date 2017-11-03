@@ -126,6 +126,11 @@ module.exports = {
     },
 
     'list': {
+        'should alias as getTimezoneList': function(t) {
+            t.equal(qdate.list, qdate.getTimezoneList);
+            t.done();
+        },
+
         'should list known timezones names': function(t) {
             var list = qdate.list();
             t.ok(Array.isArray(list));

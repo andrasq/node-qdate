@@ -61,11 +61,15 @@ Unit as in `adjust`.
 
 ##### ? format( timestamp [,tzName] )
 
+TBD.
+
 format the timestamp in the named timezone locale.
 Formatting by `phpdate`
 
 
 ##### ? convert( timestamp, tzFromName, tzToName, [format] )
+
+TBD.
 
 convert the timestamp between timezones, and return a reformatted timestamp.
 Formatting by `phpdate`

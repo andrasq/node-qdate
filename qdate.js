@@ -15,6 +15,9 @@ var qprintf = require('qprintf');
 var sprintf = qprintf.sprintf;
 
 
+var useCanonicalNames = false;
+
+
 // export a date adjusting singleton
 module.exports = new QDate();
 
@@ -56,10 +59,6 @@ var tzAliasMap = {
     HST: 'US/Hawaii', HDT: 'US/Hawaii',                         // 1000, no daylight savings
     HAST: 'US/Aleutian', HADT: 'US/Aleutian',                   // 1000
 };
-
-// TODO: probe whether US/Eastern is a recognized timezone name
-// else look up in canonical map
-var useCanonicalNames = false;
 
 // map linux-only eg US/Eastern to canonical timezone names
 var tzCanonicalMap = {
@@ -235,6 +234,5 @@ QDate.prototype.last = QDate.prototype.previous;
 
 QDate.prototype = QDate.prototype;
 
-// see if have to useCanonicalNames
-try { new QDate().abbrev('US/Eastern') }
-catch (err) { useCanonicalNames = true; }
+// if US/Eastern is not a recognized timezone name, canonicalize names
+useCanonicalNames = ! new QDate().abbrev('US/Eastern');
