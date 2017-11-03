@@ -216,19 +216,43 @@ QDate.prototype.format = function format( timestamp, format, tzName ) {
     if (tzAliasMap[tzName]) tzName = tzAliasMap[tzName];
 },
 
-QDate.prototype._tryCommand = function _tryCommand( cmdline ) {
-    try { return child_process.execSync(cmdline).toString(); }
-    catch (err) { return err; }
-},
+QDate.prototype.formatUnix = function formatUnix( timestamp, tzName ) {
+    var dt = this.parseDate(timestamp, tzName);
+    // return dt.getTime() ... FIXME: need UTC timestamp!
+//
+// TODO: change all internal dates to when formatted to render the time in the tzName timezone.
+}
+
+
 
 QDate.prototype._escapeString = function _escapeString( str ) {
     return str.replace('\\', '\\\\').replace('"', '\\"');
 },
 
+// convert the timestamp from the named timezone to Date
+QDate.prototype.parseDate = function parseDate( timestamp, tzName ) {
+    tzName = this.lookupTzName(tzName);
+    if (timestamp instanceof Date) return timestamp;
+
+    // TODO: detect unix timestamp vs js timestamp vs datetime string
+
+    // javascript creates Date objects in localtime
+    // NOTE: Date parses by syntax, not actual timezone offset!
+    //   ie "2001-01-01 EDT" => "2001-01-01T04:00:00Z", but "2001-01-01 EST" => "2001-01-01T05:00:00Z"
+    var dt = new Date(timestamp);
+
+    if (tzName) {
+        // adjust dt so formatted for localtime it will read correct for tzName
+        var offs = this.offset('localtime') - this.offset(tzName);
+    }
+
+    return dt;
+}
+
 QDate.prototype._splitDate = function _splitDate( dt, tzName ) {
     // the Date is split into components according to the system timezone, not utc
     if (tzName) {
-        // FIXME: adjust for specified timezone
+        // TODO: adjust for specified timezone
     }
     return [ dt.getFullYear(), dt.getMonth(), dt.getDate() - 1, dt.getHours(), dt.getMinutes(), dt.getSeconds(), dt.getMilliseconds() ];
     // getMmonth returns 0..11, getDate 1..31

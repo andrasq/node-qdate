@@ -54,6 +54,7 @@ module.exports = {
         },
 
         'should cache abbrev': function(t) {
+            var tz = qdate.abbrev('America/Los_Angeles');
             var t1 = Date.now();
             var tz = qdate.abbrev('America/Los_Angeles');
             var t2 = Date.now();
