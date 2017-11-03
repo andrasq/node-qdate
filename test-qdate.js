@@ -138,4 +138,41 @@ module.exports = {
             t.done();
         },
     },
+
+    'adjust': {
+        'should reject unrecognized units': function(t) {
+            t.throws(function(){ qdate.adjust(new Date(), 2, "eons") });
+            t.done();
+        },
+
+        'should move date forward by units': function(t) {
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'ms').toISOString(), "2001-01-01T00:00:00.002Z");
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'sec').toISOString(), "2001-01-01T00:00:02.000Z");
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'min').toISOString(), "2001-01-01T00:02:00.000Z");
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'hr').toISOString(), "2001-01-01T02:00:00.000Z");
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'day').toISOString(), "2001-01-03T00:00:00.000Z");
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'week').toISOString(), "2001-01-15T00:00:00.000Z");
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 1, 'month').toISOString(), "2001-02-01T00:00:00.000Z");
+            t.equal(qdate.adjust("2001-02-01T00:00:00.000Z", 1, 'month').toISOString(), "2001-03-04T00:00:00.000Z");
+            t.equal(qdate.adjust("2001-02-28T00:00:00.000Z", 1, 'month').toISOString(), "2001-03-28T00:00:00.000Z");
+            t.equal(qdate.adjust("2001-02-29T00:00:00.000Z", 1, 'month').toISOString(), "2001-03-29T00:00:00.000Z");    // 2001-02-29 is an invalid date
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'year').toISOString(), "2003-01-01T00:00:00.000Z");
+            // TODO: weird things happen if the adjustment asks for an impossibility, eg 1/30 +1 month => 2/30, which is not a thing
+            // t.equal(qdate.adjust("2001-01-30T19:00:00.000Z", 1, 'month').toISOString(), "2001-03-02T19:00:00.000Z");
+            // TODO: loop through 14 consecutive years, all months, check up/down adjusts by 1, 2, 3 months
+            t.done();
+        },
+
+        'adjust should adjust +1': function(t) {
+            t.done();
+        },
+
+        'previous should adjust -1': function(t) {
+            t.done();
+        },
+
+        'startOf should clear less significant units': function(t) {
+            t.done();
+        },
+    },
 }

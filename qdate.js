@@ -26,12 +26,15 @@ var state = {
     tzOffsetCache: null,                // cache of timezones minutes west of gmt
     tzTimer: null,
     resetTzCache: resetTzCache,
+    unitsInfo: null,
+    monthDays: null,
 };
 
 // expose internals to testing
 module.exports._test = state;
 
 function resetTzCache( ) {
+    // always keep the localtime offset on hand
     state.tzOffsetCache = { localtime: new Date().getTimezoneOffset() };
 
     // uset a timeout not interval to better control drift
@@ -71,20 +74,28 @@ var tzCanonicalMap = {
     'US/Aleutian': 'Pacific/Honolulu',  // TODO: find a better city for daylight savings HAST time
 };
 
-// unit to split date offset mapping
-var unitsMap = {
-    year: 0,        years: 0,        yr: 0,  yrs: 0,
-    month: 1,       months: 1,       mo: 1,  mos: 1,
-    day: 2,         days: 2,         dy: 2,
-    hour: 3,        hours: 3,        hr: 3,  hrs: 3,
-    minute: 4,      minutes: 4,      min: 4, mins: 4,
-    second: 5,      seconds: 5,      sec: 5, secs: 5,
-    millisecond: 6, milliseconds: 6, ms: 6,
-
-    // weeks are mapped to ['week', days_offset, days_count]
-    week: ['week', 2, 7], weeks: ['week', 2, 7], wk: ['week', 2, 7], w: ['week', 2, 7], W: ['week', 2, 7],
+// units used to adjust date offset mapping
+// each unit is defined as [name, offset_in_array, numeric_count]
+// (note that each unit is 1 of iteself, except a week is defined as 7 days)
+state.unitsInfo = {
+    year: ['year', 0, 1],       years: -1, yr: -1, yrs: -1,
+    month: ['month', 1, 1],     months: -1, mo: -1, mos: -1,
+    week: ['week', 2, 7],       weeks: -1, wk: -1, wks: -1, w: -1,
+    day: ['day', 2, 1],         days: -1, dy: -1,
+    hour: ['hour', 3, 1],       hours: -1, hr: -1, hrs: -1,
+    minute: ['minute', 4, 1],   minutes: -1, min: -1, mins: -1,
+    second: ['second', 5, 1],   seconds: -1, sec: -1, secs: -1,
+    millisecond: ['millisecond', 6, 1],         milliseconds: -1, millisec: -1, millisecs: -1, ms: -1, msec: -1, msecs: -1,
 };
-
+state.monthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+function populateAliases( object, marker ) {
+    var lastSet;
+    for (var key in object) {
+        if (object[key] !== marker) lastSet = object[key];
+        else object[key] = lastSet;
+    }
+}
+populateAliases(state.unitsInfo, -1);
 
 function QDate( ) {
     this.envCommand = "env";            // /usr/bin/env
@@ -142,15 +153,29 @@ QDate.prototype.list = function list( ) {
 },
 
 QDate.prototype.adjust = function adjust( timestamp, delta, units ) {
-    if (!unitsMap[units]) throw new Error(units + ": unrecognized unit");
+    if (!(state.unitsInfo[units][1] >= 0)) throw new Error(units + ": unrecognized unit");
     var dt = timestamp instanceof Date ? timestamp : new Date(timestamp);
     var hms = this._splitDate(dt);
+    // nb: splitDate converts to local timezone
+    // nb: adjusting can land on an invalid date eg 2/31 which Date() handles its own way
 
-    var field = unitsMap[units];
-    if (field >= 0) hms[field] += delta;        // field
-    else hms[field[1]] += delta * field[2];     // [field, multiplier] tuple eg ['week', 7, 2]
+    var uinfo = state.unitsInfo[units];
+    hms[uinfo[1]] += delta * uinfo[2];  // [name, field, multiplier] tuple eg ['week', 2(=day), 7]
 
-    return this._buildDate(hms);
+/**
+    // fixup: if adjusted months, cap the current day at the last valid day of the new month
+    // but not if adjusted hours or days, which need to wrap correctly
+    if (field === 1 && hms[2] > state.monthDays[hms[1]] - 1) {
+        // unix leap years are precisely known, and no leap seconds
+        var yr = hms[0], isLeap = (yr % 4) === 0 && ((yr % 100) !== 0 || (yr % 400) === 0);
+        // peg at last day of month, except February needs a lookup
+        hms[2] = state.monthDays[hms[1]];
+        if (hms[2] === 1 && isLeap) hms[2] += 1;
+    }
+**/
+
+    var dt = this._buildDate(hms);
+    return dt;
 },
 
 QDate.prototype.following = function following( timestamp, unit ) {
@@ -162,18 +187,15 @@ QDate.prototype.previous = function previous( timestamp, unit ) {
 },
 
 QDate.prototype.startOf = function startOf( timestamp, unit ) {
-    if (!unitsMap[unit]) throw new Error(unit + ": unrecognized unit");
+    if (!(state.unitsInfo[units][1] >= 0)) throw new Error(units + ": unrecognized unit");
     var dt = timestamp instanceof Date ? timestamp : new Date(timestamp);
     var hms = this._splitDate(dt);
 
-    var field = unitsMap[unit];
-    if (field >= 0) {
-        ;
-    }
-    else if (field[0] === 'week') {
-        field = 2;
-        hms[field] -= dt.getDay();
-    }
+    var uinfo = state.unitsInfo[unit];
+    var field = uinfo[1];
+
+    // for weeks, move the day back to the start of this week
+    if (uinfo[0] === 'week') hms[2] -= dt.getDay();
 
     // zero out all smaller units
     for (var i=field+1; i<hms.length; i++) hms[field] = 0;
@@ -191,7 +213,7 @@ QDate.prototype.strtotime = function strtotime( timespec, tzName ) {
 
 QDate.prototype.format = function format( timestamp, format, tzName ) {
     // TBD - use phpdate-js
-    if (tzAliasMap[tzName]) tzName = tzAliasMap(tzName);
+    if (tzAliasMap[tzName]) tzName = tzAliasMap[tzName];
 },
 
 QDate.prototype._tryCommand = function _tryCommand( cmdline ) {
@@ -209,7 +231,7 @@ QDate.prototype._splitDate = function _splitDate( dt, tzName ) {
         // FIXME: adjust for specified timezone
     }
     return [ dt.getFullYear(), dt.getMonth(), dt.getDate() - 1, dt.getHours(), dt.getMinutes(), dt.getSeconds(), dt.getMilliseconds() ];
-    // getMmonth returns 0..11, getDay 1..31
+    // getMmonth returns 0..11, getDate 1..31
 },
 
 QDate.prototype._buildDate = function _buildDate( hms ) {
