@@ -176,4 +176,19 @@ module.exports = {
             t.done();
         },
     },
+
+    'strtotime': {
+        'should convert English offset to date': function(t) {
+            var dt = qdate.strtotime("now +2 weeks").getTime();
+            var now = Date.now();
+            t.ok(now - dt - (2 * 7 * 24 * 3600 * 1000) < 5);
+            t.done();
+        },
+
+        'should reject non-string timespec': function(t) {
+            t.throws(function(){ qdate.strtotime(2) });
+            t.throws(function(){ qdate.strtotime(new Date()) });
+            t.done();
+        },
+    },
 }
