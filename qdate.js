@@ -207,7 +207,7 @@ QDate.prototype.previous = function previous( timestamp, unit ) {
 },
 
 QDate.prototype.startOf = function startOf( timestamp, unit ) {
-    if (!(state.unitsInfo[units][1] >= 0)) throw new Error(units + ": unrecognized unit");
+    if (!(state.unitsInfo[unit][1] >= 0)) throw new Error(units + ": unrecognized unit");
     var dt = timestamp instanceof Date ? timestamp : new Date(timestamp);
     var hms = this._splitDate(dt);
 
@@ -218,7 +218,7 @@ QDate.prototype.startOf = function startOf( timestamp, unit ) {
     if (uinfo[0] === 'week') hms[2] -= dt.getDay();
 
     // zero out all smaller units
-    for (var i=field+1; i<hms.length; i++) hms[field] = 0;
+    for (var i=field+1; i<hms.length; i++) hms[i] = 0;
 
     return this._buildDate(hms);
 },
@@ -251,14 +251,13 @@ QDate.prototype._escapeString = function _escapeString( str ) {
 
 // convert the timestamp from the named timezone to Date
 QDate.prototype.parseDate = function parseDate( timestamp, tzName ) {
-    tzName = this.lookupTzName(tzName);
     if (timestamp instanceof Date) return timestamp;
-
-    // TODO: detect unix timestamp vs js timestamp vs datetime string
+    tzName = this.lookupTzName(tzName);
 
     // javascript creates Date objects in localtime
-    // NOTE: Date parses by syntax, not actual timezone offset!
-    //   ie "2001-01-01 EDT" => "2001-01-01T04:00:00Z", but "2001-01-01 EST" => "2001-01-01T05:00:00Z"
+    // note: Date parses by syntax, not actual timezone offset,
+    //   so "2001-01-01 EDT" => "2001-01-01T04:00:00Z", but "2001-01-01 EST" => "2001-01-01T05:00:00Z"
+    // TODO: strip out EDT, EST etc abbreviations, replace with -04:00, -05:00 etc.
     var dt = new Date(timestamp);
 
     if (tzName) {
