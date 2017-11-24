@@ -34,24 +34,27 @@ var state = {
 module.exports._test = state;
 
 function resetTzCache( ) {
-    // TODO: wake up frequently and reset at the top of every 15-minute block
-    // to quickly track timezone changes.  Note that even so there will a small lag,
-    // ie the timezone info returned might be out of date.
-
     // always keep the localtime offset on hand
     state.tzOffsetCache = { localtime: new Date().getTimezoneOffset() };
 
     // uset a timeout not interval to better control drift
     if (state.tzTimer) clearTimeout(state.tzTimer);
     state.tzTimer = setTimeout(resetTzCache, nextResetMs(tzResetInterval)).unref();
+
+    // timezone offset accuracy is ensured by the millisecond precision timeout timer
+    // that discards the cached offsets every 10 minutes.  If the event loop is blocked,
+    // code that wants to look up offsets will also be delayed.  If the event loop is
+    // blocked computing timezone offsets, it will appear as if the entire loop had
+    // completed in the second leading up to the zone offset change.
 }
 resetTzCache();
 
 // number of ms until the next even 10 minutes
 function nextResetMs( interval ) {
     var now = Date.now();
-    var next = interval - now % interval;
-    return next;
+    var currentIntervalMs = now % interval;
+    var nextIntervalStart = interval - currentIntervalMs;
+    return nextIntervalStart;
 }
 
 // recognize the common North American timezone abbreviations
