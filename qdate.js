@@ -34,6 +34,10 @@ var state = {
 module.exports._test = state;
 
 function resetTzCache( ) {
+    // TODO: wake up frequently and reset at the top of every 15-minute block
+    // to quickly track timezone changes.  Note that even so there will a small lag,
+    // ie the timezone info returned might be out of date.
+
     // always keep the localtime offset on hand
     state.tzOffsetCache = { localtime: new Date().getTimezoneOffset() };
 

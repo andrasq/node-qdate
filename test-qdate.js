@@ -106,10 +106,12 @@ module.exports = {
 
         'reset should clear the timer': function(t) {
             var spy = t.spy(global, 'clearTimeout');
+            qdate._test.tzTimer = {};
             var timer = qdate._test.tzTimer;
             qdate._test.resetTzCache();
             spy.restore();
             t.equal(spy.callCount, 1);
+            t.notEqual(qdate._test.tzTimer, timer);
             t.deepEqual(spy.args[0], [timer]);
             t.done();
         },
