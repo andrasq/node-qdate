@@ -57,8 +57,9 @@ function nextResetMs( interval ) {
     return nextIntervalStart;
 }
 
-// recognize the common North American timezone abbreviations
+// recognize some common timezone abbreviations
 var tzAliasMap = {
+    // standard, daylight savings, HHMM west of GMT
     NST: 'Canada/Newfoundland', NDT: 'Canada/Newfoundland',     // 330
     AST: 'Canada/Atlantic', ADT: 'Canada/Atlantic',             // 400
     EST: 'US/Eastern', EDT: 'US/Eastern',                       // 500
@@ -68,10 +69,19 @@ var tzAliasMap = {
     AKST: 'US/Alaska', AKDT: 'US/Alaska',                       // 900
     HST: 'US/Hawaii', HDT: 'US/Hawaii',                         // 1000, no daylight savings
     HAST: 'US/Aleutian', HADT: 'US/Aleutian',                   // 1000
+
+    GMT: 'GMT', 'UTC': 'UTC',                                           // -0000
+    BST: 'Europe/London', BDST: 'Europe/London',                        // -0000
+    CET: 'Europe/Central', CEST: 'Europe/Central',                      // -0100
+    EET: 'Europe/Eastern', EEST: 'Europe/Eastern',                      // -0200
+    MSK: 'Europe/Moscow', MST: 'Europe/Moscow', MDST: 'Europe/Moscow',  // -0300
 };
 
 // map linux-only eg US/Eastern to canonical timezone names
 var tzCanonicalMap = {
+    'Canada/Newfoundland': 'America/St_Johns',
+    'Canada/Atlantic': 'America/Halifax',
+
     'US/Eastern': 'America/New_York',
     'US/Central': 'America/Chicago',
     'US/Moutain': 'America/Boise',
@@ -79,19 +89,22 @@ var tzCanonicalMap = {
     'US/Alaska': 'America/Juneau',
     'US/Hawaii': 'Pacific/Honolulu',
     'US/Aleutian': 'Pacific/Honolulu',  // TODO: find a better city for daylight savings HAST time
+
+    'Europe/Central': 'Europe/Paris',
+    'Europe/Eastern': 'Europe/Athens',
 };
 
 // units used to adjust date offset mapping
 // each unit is defined as [name, offset_in_array, numeric_count]
 // (note that each unit is 1 of iteself, except a week is defined as 7 days)
 state.unitsInfo = {
-    year: ['year', 0, 1],       years: -1, yr: -1, yrs: -1,
-    month: ['month', 1, 1],     months: -1, mo: -1, mos: -1,
-    week: ['week', 2, 7],       weeks: -1, wk: -1, wks: -1, w: -1,
-    day: ['day', 2, 1],         days: -1, dy: -1,
-    hour: ['hour', 3, 1],       hours: -1, hr: -1, hrs: -1,
-    minute: ['minute', 4, 1],   minutes: -1, min: -1, mins: -1,
-    second: ['second', 5, 1],   seconds: -1, sec: -1, secs: -1,
+    year: ['year', 0, 1],       years: -1, yr: -1, yrs: -1, y: -1, Y: -1,
+    month: ['month', 1, 1],     months: -1, mo: -1, mos: -1, M: -1,
+    week: ['week', 2, 7],       weeks: -1, wk: -1, wks: -1, w: -1, W: -1,
+    day: ['day', 2, 1],         days: -1, dy: -1, d: -1, D: -1,
+    hour: ['hour', 3, 1],       hours: -1, hr: -1, hrs: -1, h: -1,
+    minute: ['minute', 4, 1],   minutes: -1, min: -1, mins: -1, m: -1,
+    second: ['second', 5, 1],   seconds: -1, sec: -1, secs: -1, s: -1,
     millisecond: ['millisecond', 6, 1],         milliseconds: -1, millisec: -1, millisecs: -1, ms: -1, msec: -1, msecs: -1,
 };
 state.monthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
