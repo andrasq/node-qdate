@@ -13,10 +13,12 @@ var child_process = require('child_process');
 var phpdate = require('phpdate-js');
 var qprintf = require('qprintf');
 var sprintf = qprintf.sprintf;
+var tzinfo = require('tzinfo');
 
 
+// initialized during loading
 var useCanonicalNames = false;
-
+var cachedZonefilesList = tzinfo.listZoneinfoFiles(tzinfo.getZoneinfoDirectory());
 
 // export a date adjusting singleton
 module.exports = new QDate();
@@ -164,11 +166,11 @@ QDate.prototype.convert = function convert( timestamp, tzFromName, tzToName, for
 },
 
 QDate.prototype.list = function list( ) {
-    // note: this call could be slow, and is blocking, call only during setup
-    // TODO: make work on platforms, eg /usr/lib/zoneinfo
-    var files = child_process.execSync(
-        "find /usr/share/zoneinfo/ -type f | xargs file | grep timezone | cut -d: -f1 | cut -b21- | grep '^[A-Z]'");
-    files = files.toString().trim().split("\n");
+    var dirname = tzinfo.getZoneinfoDirectory();
+    var files = new Array();
+    for (var i=0; i<cachedZonefilesList.length; i++) {
+        files.push(cachedZonefilesList[i].slice(dirname.length + 1));
+    }
     return files;
 },
 

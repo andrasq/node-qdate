@@ -92,7 +92,7 @@ module.exports = {
             qdate._test.tzOffsetCache['nonesuch'] = 'testing only';
             var offs = qdate.offset('nonesuch');
             t.equal(offs, 'testing only');
-            t.done();q
+            t.done();
         },
 
         'reset should clear the cache': function(t) {
@@ -138,6 +138,8 @@ module.exports = {
             var list = qdate.list();
             t.ok(Array.isArray(list));
             t.ok(list.length > 100);
+            t.contains(list, "America/Jamaica");
+            t.contains(list, "Pacific/Guam");
             t.done();
         },
     },

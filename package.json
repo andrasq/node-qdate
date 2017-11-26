@@ -17,6 +17,7 @@
     "tbd-test": "qnit test-*"
   },
   "dependencies": {
+    "tzinfo": "0.4.1",
     "phpdate-js": "1.0",
     "qprintf": "0.9.2"
   },
