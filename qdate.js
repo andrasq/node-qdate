@@ -1,7 +1,7 @@
 /**
  * simple timezone and datetime adjustment functions
  *
- * Copyright (C) 2016-2017 Andras Radics
+ * Copyright (C) 2016-2018 Andras Radics
  * Licensed under the Apache License, Version 2.0
  *
  * 2016-10-11 - Started.
@@ -17,8 +17,8 @@ var tzinfo = require('tzinfo');
 
 
 // initialized during loading
-var useCanonicalNames = false;
 var cachedZonefilesList = tzinfo.listZoneinfoFiles(tzinfo.getZoneinfoDirectory());
+var localtimeTimezone;
 
 // export a date adjusting singleton
 module.exports = new QDate();
@@ -26,11 +26,37 @@ module.exports = new QDate();
 var tzResetInterval = 600000;           // reset cache every 10 min to track daylight savings
 var state = {
     tzOffsetCache: null,                // cache of timezones minutes west of gmt
+    tzInfoCache: null,                  // cache of tzinfo from `tzinfo`
     tzTimer: null,
     resetTzCache: resetTzCache,
-    unitsInfo: null,
-    monthDays: null,
+    // units used to adjust date offset mapping
+    // each unit is defined as [name, offset_in_array, numeric_count]
+    // (note that each unit is 1 of iteself, except a week is defined as 7 days)
+    unitsInfo: {
+        year: ['year', 0, 1],       years: -1, yr: -1, yrs: -1, y: -1, Y: -1,
+        month: ['month', 1, 1],     months: -1, mo: -1, mos: -1, M: -1,
+        week: ['week', 2, 7],       weeks: -1, wk: -1, wks: -1, w: -1, W: -1,
+        day: ['day', 2, 1],         days: -1, dy: -1, d: -1, D: -1,
+        hour: ['hour', 3, 1],       hours: -1, hr: -1, hrs: -1, h: -1,
+        minute: ['minute', 4, 1],   minutes: -1, min: -1, mins: -1, mi: -1, m: -1,
+        second: ['second', 5, 1],   seconds: -1, sec: -1, secs: -1, s: -1,
+        millisecond: ['millisecond', 6, 1],         milliseconds: -1, millisec: -1, millisecs: -1, ms: -1, msec: -1, msecs: -1,
+    },
+    monthDays: [ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ],
+
+    getUnitsInfo: function getUnitsInfo( units ) {
+        if (!this.unitsInfo[units]) throw new Error(units + ": unrecognized unit");
+        return state.unitsInfo[units];
+    },
+
 };
+function populateAliases( object ) {
+    var lastSet;
+    for (var key in object) {
+        (object[key] === -1) ? object[key] = lastSet : lastSet = object[key];
+    }
+}
+populateAliases(state.unitsInfo);
 
 // expose internals to testing
 module.exports._test = state;
@@ -72,17 +98,22 @@ var tzAliasMap = {
     HST: 'US/Hawaii', HDT: 'US/Hawaii',                         // 1000, no daylight savings
     HAST: 'US/Aleutian', HADT: 'US/Aleutian',                   // 1000
 
-    GMT: 'GMT', 'UTC': 'UTC',                                           // -0000
-    BST: 'Europe/London', BDST: 'Europe/London',                        // -0000
-    CET: 'Europe/Central', CEST: 'Europe/Central',                      // -0100
-    EET: 'Europe/Eastern', EEST: 'Europe/Eastern',                      // -0200
-    MSK: 'Europe/Moscow', MST: 'Europe/Moscow', MDST: 'Europe/Moscow',  // -0300
+    GMT: 'GMT', 'UTC': 'UTC',                                   // -0000
+    BST: 'Europe/London', BDST: 'Europe/London',                // -0000
+    CET: 'Europe/Central', CEST: 'Europe/Central',              // -0100
+    EET: 'Europe/Eastern', EEST: 'Europe/Eastern',              // -0200
+    MSK: 'Europe/Moscow', /* MST, MDST, */                      // -0300
 };
 
 // map linux-only eg US/Eastern to canonical timezone names
+// Entries that are locally recognized are deleted from this map.
 var tzCanonicalMap = {
     'Canada/Newfoundland': 'America/St_Johns',
     'Canada/Atlantic': 'America/Halifax',
+    'Canada/Eastern': 'America/Toronto',
+    'Canada/Central': 'America/Winnipeg',
+    'Canada/Mountain': 'America/Edmonton',
+    'Canada/Pacific': 'America/Vancouver',
 
     'US/Eastern': 'America/New_York',
     'US/Central': 'America/Chicago',
@@ -90,34 +121,11 @@ var tzCanonicalMap = {
     'US/Pacific': 'America/Los_Angeles',
     'US/Alaska': 'America/Juneau',
     'US/Hawaii': 'Pacific/Honolulu',
-    'US/Aleutian': 'Pacific/Honolulu',  // TODO: find a better city for daylight savings HAST time
 
     'Europe/Central': 'Europe/Paris',
     'Europe/Eastern': 'Europe/Athens',
 };
 
-// units used to adjust date offset mapping
-// each unit is defined as [name, offset_in_array, numeric_count]
-// (note that each unit is 1 of iteself, except a week is defined as 7 days)
-state.unitsInfo = {
-    year: ['year', 0, 1],       years: -1, yr: -1, yrs: -1, y: -1, Y: -1,
-    month: ['month', 1, 1],     months: -1, mo: -1, mos: -1, M: -1,
-    week: ['week', 2, 7],       weeks: -1, wk: -1, wks: -1, w: -1, W: -1,
-    day: ['day', 2, 1],         days: -1, dy: -1, d: -1, D: -1,
-    hour: ['hour', 3, 1],       hours: -1, hr: -1, hrs: -1, h: -1,
-    minute: ['minute', 4, 1],   minutes: -1, min: -1, mins: -1, m: -1,
-    second: ['second', 5, 1],   seconds: -1, sec: -1, secs: -1, s: -1,
-    millisecond: ['millisecond', 6, 1],         milliseconds: -1, millisec: -1, millisecs: -1, ms: -1, msec: -1, msecs: -1,
-};
-state.monthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-function populateAliases( object, marker ) {
-    var lastSet;
-    for (var key in object) {
-        if (object[key] !== marker) lastSet = object[key];
-        else object[key] = lastSet;
-    }
-}
-populateAliases(state.unitsInfo, -1);
 
 function QDate( ) {
     this.envCommand = "env";            // /usr/bin/env
@@ -126,19 +134,18 @@ function QDate( ) {
     this.strtotimeCommand = 'date --date="%s"';
 }
 
+QDate.prototype._state = state;
+
 QDate.prototype.maybeTzEnv = function maybeTzEnv( tzName ) {
     if (!tzName) return '';
     return this.envCommand + ' TZ="' + this._escapeString(tzName) + '" ';
 }
 
 QDate.prototype.lookupTzName = function lookupTzName( tzName ) {
-    if (tzAliasMap[tzName]) tzName = tzAliasMap[tzName];
-    if (useCanonicalNames && tzCanonicalMap[tzName]) tzName = tzCanonicalMap[tzName];
-    return tzName;
+    return tzAliasMap[tzName] || tzCanonicalMap[tzName] || tzName;
 }
 
 QDate.prototype.abbrev = function abbrev( tzName ) {
-    tzName = this.lookupTzName(tzName);
     var cmdline = this.maybeTzEnv(tzName) + this.tzAbbrevCommand;
     return child_process.execSync(cmdline).toString().trim();
 }
@@ -155,15 +162,15 @@ QDate.prototype.offset = function offset( tzName ) {
     } else {
         return state.tzOffsetCache[tzName] = -( 60 * Math.floor(tzOffset / 100) + tzOffset % 100 );
     }
-},
+}
 
 QDate.prototype.convert = function convert( timestamp, tzFromName, tzToName, format ) {
     tzFromName = this.lookupTzName(tzFromName);
     tzToName = this.lookupTzName(tzToName);
-    if (typeof timestamp !== 'number') timestamp = new Date(timestamp).getTime();
-    // FIXME:
-    // ??? return timestamp + 60000 * (this.offset(tzToName) - this.offset(tzFromName));
-},
+    var dt = this.parseDate(timestamp, tzFromName);
+    format = format || 'Y-m-d H:i:s';
+    return this.format(dt, format, tzToName);
+}
 
 QDate.prototype.list = function list( ) {
     var dirname = tzinfo.getZoneinfoDirectory();
@@ -172,58 +179,63 @@ QDate.prototype.list = function list( ) {
         files.push(cachedZonefilesList[i].slice(dirname.length + 1));
     }
     return files;
-},
+}
 
 QDate.prototype.adjust = function adjust( timestamp, delta, units ) {
-    if (!(state.unitsInfo[units][1] >= 0)) throw new Error(units + ": unrecognized unit");
+    var uinfo = state.getUnitsInfo(units);
     var dt = timestamp instanceof Date ? timestamp : new Date(timestamp);
     var hms = this._splitDate(dt);
     // nb: splitDate converts to local timezone
     // nb: adjusting can land on an invalid date eg 2/31 which Date() handles its own way
 
-    var uinfo = state.unitsInfo[units];
-    hms[uinfo[1]] += delta * uinfo[2];  // [name, field, multiplier] tuple eg ['week', 2(=day), 7]
+    var field = uinfo[1];
+    hms[field] += delta * uinfo[2];     // [name, field, multiplier] tuple eg ['week', 2(=day), 7]
 
-/**
-    // fixup: if adjusted months, cap the current day at the last valid day of the new month
+    // adjusting by months is different from all the others,
+    // because months are different sizes.  Ie, 1/5 -> 2/5 -> 3/5 -> 4/5, but
+    // 1/30 -> 2/28 -> 3/30 -> 4/30, and 1/31 -> 2/28 -> 3/31 -> 4/30.
+    // If adjusted months, cap the current day at the last valid day of the new month
     // but not if adjusted hours or days, which need to wrap correctly
     if (field === 1 && hms[2] > state.monthDays[hms[1]] - 1) {
-        // unix leap years are precisely known, and no leap seconds
-        var yr = hms[0], isLeap = (yr % 4) === 0 && ((yr % 100) !== 0 || (yr % 400) === 0);
-        // peg at last day of month, except February needs a lookup
-        hms[2] = state.monthDays[hms[1]];
-        if (hms[2] === 1 && isLeap) hms[2] += 1;
+        // peg at last day of month, except February needs a leap year test
+        hms[2] = state.monthDays[hms[1]] - 1;
+        if (hms[1] === 1) {
+            var yr = hms[0], isLeap = (yr % 4) === 0 && ((yr % 100) !== 0 || (yr % 400) === 0);
+            if (isLeap) hms[2] += 1;
+        }
     }
-**/
 
     var dt = this._buildDate(hms);
     return dt;
-},
+}
 
 QDate.prototype.following = function following( timestamp, unit ) {
     return this.startOf(this.adjust(timestamp, +1, unit), unit);
-},
+}
 
 QDate.prototype.previous = function previous( timestamp, unit ) {
     return this.startOf(this.adjust(timestamp, -1, unit), unit);
-},
+}
 
-QDate.prototype.startOf = function startOf( timestamp, unit ) {
-    if (!(state.unitsInfo[unit][1] >= 0)) throw new Error(units + ": unrecognized unit");
+// extend date?  or annotate each date object with its timezone?
+QDate.prototype.startOf = function startOf( timestamp, units, tzName ) {
+    // TODO: needs a timezone!  ie, meaning of "00:00:00" depends on timezone
+    var uinfo = state.getUnitsInfo(units);
     var dt = timestamp instanceof Date ? timestamp : new Date(timestamp);
     var hms = this._splitDate(dt);
 
-    var uinfo = state.unitsInfo[unit];
     var field = uinfo[1];
 
     // for weeks, move the day back to the start of this week
+// TODO: TZDate() object, extend with getTZDay(), getTZMinute() etc methods
+// FIXME: day of week depends on timezone!  eg 10pm EST -> 2am GMT next day
     if (uinfo[0] === 'week') hms[2] -= dt.getDay();
 
     // zero out all smaller units
     for (var i=field+1; i<hms.length; i++) hms[i] = 0;
 
     return this._buildDate(hms);
-},
+}
 
 QDate.prototype.strtotime = function strtotime( timespec, tzName ) {
     tzName = this.lookupTzName(tzName);
@@ -231,25 +243,31 @@ QDate.prototype.strtotime = function strtotime( timespec, tzName ) {
     var cmdline = this.maybeTzEnv(tzName) + sprintf(this.strtotimeCommand, this._escapeString(timespec));
     var timestamp = child_process.execSync(cmdline).toString();
     return new Date(timestamp);
-},
+}
 
 QDate.prototype.format = function format( timestamp, format, tzName ) {
-    // TBD - use phpdate-js
-    if (tzAliasMap[tzName]) tzName = tzAliasMap[tzName];
-},
+    tzName = this.lookupTzName(tzName);
+    var dt = this.parseDate(timestamp, tzName);
+    if (!tzName) return phpdate(format, timestamp);
 
+    // TODO: look up tzInfo, look up offset for Math.floor(dt.getTime() / 1000),
+    // tell php the timezone name, abbrev and offset to use, and format as gmt.
+    // phpdate.tzdate(format, dt, { tzName: tzName, tzAbbrev: tzAbbrev, tzOffset: tzOffset });
+}
+
+/**
 QDate.prototype.formatUnix = function formatUnix( timestamp, tzName ) {
     var dt = this.parseDate(timestamp, tzName);
     // return dt.getTime() ... FIXME: need UTC timestamp!
 //
 // TODO: change all internal dates to when formatted to render the time in the tzName timezone.
 }
-
+**/
 
 
 QDate.prototype._escapeString = function _escapeString( str ) {
     return str.replace('\\', '\\\\').replace('"', '\\"');
-},
+}
 
 // convert the timestamp from the named timezone to Date
 QDate.prototype.parseDate = function parseDate( timestamp, tzName ) {
@@ -264,6 +282,7 @@ QDate.prototype.parseDate = function parseDate( timestamp, tzName ) {
 
     if (tzName) {
         // adjust dt so formatted for localtime it will read correct for tzName
+        // TODO: should adjust for GMT, since localtime always changes
         var offs = this.offset('localtime') - this.offset(tzName);
     }
 
@@ -276,22 +295,15 @@ QDate.prototype._splitDate = function _splitDate( dt, tzName ) {
         // TODO: adjust for specified timezone
     }
     return [ dt.getFullYear(), dt.getMonth(), dt.getDate() - 1, dt.getHours(), dt.getMinutes(), dt.getSeconds(), dt.getMilliseconds() ];
-    // getMmonth returns 0..11, getDate 1..31
-},
+    // getMonth returns 0..11, getDate 1..31
+}
 
 QDate.prototype._buildDate = function _buildDate( hms ) {
     // days are 1-based, months, hours, minutes, etc all 0-based
     return new Date(hms[0], hms[1], hms[2] + 1, hms[3], hms[4], hms[5], hms[6]);
-},
+}
 
 // aliases
-QDate.prototype.getTimezoneAbbrev = null;
-QDate.prototype.getTimezoneOffset = null;
-QDate.prototype.getTimezoneList = null;
-
-
-// aliases
-
 QDate.prototype.getTimezoneAbbrev = QDate.prototype.abbrev;
 QDate.prototype.getTimezoneOffset = QDate.prototype.offset;
 QDate.prototype.getTimezoneList = QDate.prototype.list;
@@ -301,5 +313,12 @@ QDate.prototype.last = QDate.prototype.previous;
 
 QDate.prototype = QDate.prototype;
 
-// if US/Eastern is not a recognized timezone name, canonicalize names
-useCanonicalNames = ! new QDate().abbrev('US/Eastern');
+
+// do not convert known timezones eg US/Eastern to America/New_York
+for (var k in tzCanonicalMap) {
+    new QDate().abbrev(k) && delete tzCanonicalMap[k];
+}
+
+// look up the default timezone name, if available
+try { localtimeTimezone = fs.readFileSync('/etc/timezone').toString() }
+catch (e) { localtimeTimezone = tzAliasMap[module.exports.abbrev()] }

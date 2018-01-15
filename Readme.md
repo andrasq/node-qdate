@@ -43,28 +43,28 @@ may be one of 'year', 'month', 'week', 'day', 'hour', 'minute', 'second' or
 convert the time specification to a Date.  The time spec can be anything `date
 --date` can parse, like "+2 hours" or "3 weeks ago" or "9pm last Friday".
 
-### startOf( timestamp, unit )
+### startOf( timestamp, unit [,tzName] )
 
 return the Date corresponding to the start of the current unit.  Unit may be any
 one of the time divisions listed under `adjust()`, eg 'year', 'month', 'week',
 etc.
 
-### following( timestamp, unit )
+### following( timestamp, unit [,tzName] )
 
 return the Date corresponding to the start of the named unit following the current.
 Unit as in `adjust`.
 
-### previous( timestamp, unit ) 
+### previous( timestamp, unit [,tzName] ) 
 
 return the Date corresponding to the start of the named unit preceding the current.
 Unit as in `adjust`.
 
-##### ? format( timestamp [,tzName] )
+##### ? format( timestamp, format [,tzName] )
 
 TBD.
 
 format the timestamp in the named timezone locale.
-Formatting by `phpdate`
+Formatting by `phpdate-js`
 
 
 ##### ? convert( timestamp, tzFromName, tzToName, [format] )
@@ -72,13 +72,14 @@ Formatting by `phpdate`
 TBD.
 
 convert the timestamp between timezones, and return a reformatted timestamp.
-Formatting by `phpdate`
+The default format is `"Y-m-d H:i:s"`.  Formatting by `phpdate-js`
 
 
 Todo
 ----
 
 - way to fetch the default timezone abbreviation (to use in formatting) `date +%Z`
+- should refactor to internally always work in GMT (not localtime)
 
 
 Change Log
@@ -95,7 +96,7 @@ Related
 - `ctime(3)`
 - `tzname(3)`
 - `strftime(3)`
-- [`phpdate-js`](https://github.com/andrasq/phpdate-js) - fast datetime formatting
+- [`phpdate-js`](https://npmjs.com/package/phpdate-js) - fast datetime formatting
 - `/bin/date +%Z @0`
 - `/etc/timezone`
 - `/usr/share/zoneinfo`

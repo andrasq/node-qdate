@@ -5,13 +5,7 @@
 
 var qdate = require("./");
 var timeit = require('qtimeit');
-
-console.log("AR: abbrev", qdate.abbrev("US/Pacific"));
-console.log("AR: offset", qdate.offset("US/Pacific"));
-
-//console.log(new Date( qdate.adjust("2016-01-01 00:00:00.001", +1, "weeks") ));
-//console.log(new Date( qdate.adjust("2016-10-13 01:23:45.678", +1, "weeks") ));
-//console.log(new Date( qdate.adjust(new Date(), +4, "weeks") ));
+var phpdate = require('phpdate-js');
 
 var x = 0, dt = new Date();
 
@@ -158,13 +152,16 @@ module.exports = {
             t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'day').toISOString(), "2001-01-03T00:00:00.000Z");
             t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'week').toISOString(), "2001-01-15T00:00:00.000Z");
             t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 1, 'month').toISOString(), "2001-02-01T00:00:00.000Z");
-            t.equal(qdate.adjust("2001-02-01T00:00:00.000Z", 1, 'month').toISOString(), "2001-03-04T00:00:00.000Z");
+            t.equal(qdate.adjust("2001-02-01T00:00:00.000Z", 1, 'month').toISOString(), "2001-03-01T00:00:00.000Z");
             t.equal(qdate.adjust("2001-02-28T00:00:00.000Z", 1, 'month').toISOString(), "2001-03-28T00:00:00.000Z");
             t.equal(qdate.adjust("2001-02-29T00:00:00.000Z", 1, 'month').toISOString(), "2001-03-29T00:00:00.000Z");    // 2001-02-29 is an invalid date
+            t.equal(phpdate('Y-m-d H:i:s', qdate.adjust("2016-01-30 12:00:00.000", 1, 'month')), "2016-02-29 12:00:00");  // leap
+            t.equal(phpdate('Y-m-d H:i:s', qdate.adjust("2015-01-30 12:00:00.000", 1, 'month')), "2015-02-28 12:00:00");  // non-leap
+            t.equal(phpdate('Y-m-d H:i:s', qdate.adjust("2000-01-30 12:00:00.000", 1, 'month')), "2000-02-29 12:00:00");  // y2k was leap
+            t.equal(phpdate('Y-m-d H:i:s', qdate.adjust("2015-01-31 12:00:00.000", 2, 'month')), "2015-03-31 12:00:00");
+            t.equal(phpdate('Y-m-d H:i:s', qdate.adjust("2015-01-31 12:00:00.000", 3, 'month')), "2015-04-30 12:00:00");
+            t.equal(qdate.adjust("2001-01-30T19:00:00.000Z", 1, 'month').toISOString(), "2001-02-28T19:00:00.000Z");
             t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'year').toISOString(), "2003-01-01T00:00:00.000Z");
-            // TODO: weird things happen if the adjustment asks for an impossibility, eg 1/30 +1 month => 2/30, which is not a thing
-            // t.equal(qdate.adjust("2001-01-30T19:00:00.000Z", 1, 'month').toISOString(), "2001-03-02T19:00:00.000Z");
-            // TODO: loop through 14 consecutive years, all months, check up/down adjusts by 1, 2, 3 months
             t.done();
         },
 
@@ -181,6 +178,48 @@ module.exports = {
         },
     },
 
+    'startOf': {
+        'should call state.getUnitsInfo': function(t) {
+            var spy = t.spyOnce(qdate._state, 'getUnitsInfo');
+            qdate.startOf(new Date(), 'day');
+            t.equal(spy.callCount, 1);
+            t.equal(spy.args[0][0], 'day');
+            t.done();
+        },
+
+        'should return start of current local timezone time period': function(t) {
+            var dt = new Date('2017-02-03 12:34:56.789');
+            t.equal(phpdate('Y-m-d H:i:s', qdate.startOf(dt, 'year')), '2017-01-01 00:00:00');
+            t.equal(phpdate('Y-m-d H:i:s', qdate.startOf(dt, 'month')), '2017-02-01 00:00:00');
+            t.equal(phpdate('Y-m-d H:i:s', qdate.startOf(dt, 'week')), '2017-01-29 00:00:00');
+            t.equal(phpdate('Y-m-d H:i:s', qdate.startOf("2016-02-03 12:34:56.789", 'week')), '2016-01-31 00:00:00');
+            t.equal(phpdate('Y-m-d H:i:s', qdate.startOf(dt, 'day')), '2017-02-03 00:00:00');
+            t.equal(phpdate('Y-m-d H:i:s', qdate.startOf(dt, 'hour')), '2017-02-03 12:00:00');
+            t.equal(phpdate('Y-m-d H:i:s.u', qdate.startOf(dt, 'minute')), '2017-02-03 12:34:00.000000');
+            t.equal(phpdate('Y-m-d H:i:s.u', qdate.startOf(dt, 'second')), '2017-02-03 12:34:56.000000');
+            t.equal(phpdate('Y-m-d H:i:s.u', qdate.startOf(dt, 'millisecond')), '2017-02-03 12:34:56.789000');
+            t.done();
+        },
+
+        'previous should call startOf': function(t) {
+            var spy = t.spyOnce(qdate, 'startOf');
+            var now = new Date();
+            qdate.previous(now, 'hour');
+            t.equal(spy.callCount, 1);
+            t.equal(+spy.args[0][0], +now - 1*3600*1000);
+            t.done();
+        },
+
+        'following should call startOf': function(t) {
+            var spy = t.spyOnce(qdate, 'startOf');
+            var now = new Date();
+            qdate.following(now, 'day');
+            t.equal(spy.callCount, 1);
+            t.equal(+spy.args[0][0], +now + 24*3600*1000);
+            t.done();
+        },
+    },
+
     'strtotime': {
         'should convert English offset to date': function(t) {
             var dt = qdate.strtotime("now +2 weeks").getTime();
@@ -192,6 +231,34 @@ module.exports = {
         'should reject non-string timespec': function(t) {
             t.throws(function(){ qdate.strtotime(2) });
             t.throws(function(){ qdate.strtotime(new Date()) });
+            t.done();
+        },
+    },
+
+    'format': {
+        'should format in default timezone': function(t) {
+            var dt = new Date("2016-02-29 12:34:56.789");
+            t.equal(qdate.format(dt, 'Y-m-d H:i:s.u'), "2016-02-29 12:34:56.789000");
+            t.done();
+        },
+    },
+
+    'convert': {
+        'should call this.format to format with default format': function(t) {
+            var spy = t.spyOnce(qdate, 'format');
+            qdate.convert("2016-02-29 12:34:56", 'US/Eastern', 'GMT');
+            t.equal(spy.callCount, 1);
+            t.equal(spy.args[0][1], 'Y-m-d H:i:s');     // default format
+            t.equal(spy.args[0][2], 'GMT');             // tzToName
+            t.done();
+        },
+
+        'should call this.format with explicit format': function(t) {
+            var spy = t.spyOnce(qdate, 'format');
+            qdate.convert("2016-02-29 12:34:56", 'US/Eastern', 'GMT', 'T e');
+            t.equal(spy.callCount, 1);
+            t.equal(spy.args[0][1], 'T e');
+            t.equal(spy.args[0][2], 'GMT');
             t.done();
         },
     },
