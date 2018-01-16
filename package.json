@@ -1,6 +1,6 @@
 {
   "name": "qdate",
-  "version": "0.0.5",
+  "version": "0.0.6-dev",
   "main": "qdate.js",
   "description": "quick little date converter",
   "author": "andras@andrasq.com",

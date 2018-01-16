@@ -1,6 +1,8 @@
 qdate
 =====
 
+_WORK IN PROGRESS._
+
 Small, light and quick handy date conversion functions.
 
 Unlike timezone packages that drag along their own timezone database, `qdate`
