@@ -1,6 +1,6 @@
 {
   "name": "qdate",
-  "version": "0.0.6-dev",
+  "version": "0.1.0",
   "main": "qdate.js",
   "description": "quick little date converter",
   "author": "andras@andrasq.com",
@@ -12,18 +12,17 @@
   "engines": {
     "node": ">= 0.11"
   },
-  "scripts": {
-    "tbd-coverage": "nyc --cache qnit test-*",
-    "tbd-test": "qnit test-*"
-  },
+  "readme": "see README.md in the repo",
+
   "dependencies": {
-    "tzinfo": "0.4.1",
+    "tzinfo": "https://github.com/andrasq/node-tzinfo#0.5.0",
     "phpdate-js": "1.0.3",
     "qprintf": "0.9.2"
   },
   "devDependencies": {
     "qnit": "0.25.0"
   },
+
   "scripts": {
     "test": "qnit test-*",
     "coverage": "nyc --reporter text --reporter lcov npm test",

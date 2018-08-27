@@ -25,10 +25,11 @@ Api
 
 return the three-character timezone abbreviation of the named timezone
 
-### offset( tzName ), getTimezoneOffset
+### offset( tzName [,when] ), getTimezoneOffset
 
-return the offset as minutes west of GMT of the named timezone.  This is what
-`new Date().getTimezoneOffset()` does for the default timezone.
+return the current offset as minutes west of GMT of the named timezone.  This is what
+`new Date().getTimezoneOffset()` does for the default timezone.  If `when` is specified,
+returns the offset that was in effect at that time.
 
 ### list( ), getTimezoneList
 
@@ -87,6 +88,7 @@ Todo
 Change Log
 ----------
 
+- 0.1.0 - use tzinfo to obtain timezone offsets
 - 0.0.4 - refactor into a singleton, split into an array, startOf, previous, following methods
 - 0.0.3 - depend on phpdate-js
 - 0.0.2 - rename to `qdate`, test (tbd) with qnit

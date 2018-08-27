@@ -235,7 +235,37 @@ module.exports = {
         },
     },
 
-    'format': {
+    'parseDate': {
+        'should parse in the specified timezone': function(t) {
+            var dt = '2016-08-27 12:34:56.789';
+            t.equal(qdate.parse(dt).getTime(), new Date(dt).getTime());
+            t.equal(qdate.parse(dt, 'US/Eastern').toISOString(), '2016-08-27T16:34:56.789Z');
+            t.equal(qdate.parse(dt, 'GMT').toISOString(), '2016-08-27T12:34:56.789Z');
+            t.equal(qdate.parse(dt, 'Europe/Paris').toISOString(), '2016-08-27T10:34:56.789Z');
+            t.equal(qdate.parse(dt, 'US/Pacific').toISOString(), '2016-08-27T19:34:56.789Z');
+
+            var dt = '2016-12-31 23:45:00';
+            t.equal(qdate.parse(dt, 'GMT').toISOString(), '2016-12-31T23:45:00.000Z');
+            t.equal(qdate.parse(dt, 'US/Eastern').toISOString(), '2017-01-01T04:45:00.000Z');
+            t.equal(qdate.parse(dt, 'Europe/Paris').toISOString(), '2016-12-31T22:45:00.000Z');
+            t.equal(qdate.parse(dt, 'US/Pacific').toISOString(), '2017-01-01T07:45:00.000Z');
+
+            t.equal(qdate.parse('2037-01-01 12:34:56', 'US/Eastern').toISOString(), '2037-01-01T17:34:56.000Z');        // future ST
+            t.equal(qdate.parse('2037-08-01 12:34:56', 'US/Eastern').toISOString(), '2037-08-01T16:34:56.000Z');        // future DT
+            t.equal(qdate.parse('2999-01-01 12:34:56', 'US/Eastern').toISOString(), '2999-01-01T17:34:56.000Z');        // too far in the future, assume ST
+            t.equal(qdate.parse('1812-01-01 12:34:56', 'US/Eastern').toISOString(), '1812-01-01T17:34:56.000Z');        // no DT yet
+            t.equal(qdate.parse('1812-08-01 12:34:56', 'US/Eastern').toISOString(), '1812-08-01T17:34:56.000Z');        // no DT yet
+
+            t.equal(qdate.parse(1535328000000, 'US/Eastern').toISOString(), '2018-08-27T00:00:00.000Z');
+
+            t.throws(function(){ qdate.parse('2018-08-27', 'None/Such') }, /qdate: None\/Such: no tzinfo found/);
+            t.throws(function(){ qdate.parse({}, 'US/Eastern') }, /cannot parse/);
+
+            t.done();
+        },
+    },
+
+    'formatDate': {
         'should format in default timezone': function(t) {
             var dt = new Date("2016-02-29 12:34:56.789");
             t.equal(qdate.format(dt, 'Y-m-d H:i:s.u'), "2016-02-29 12:34:56.789000");

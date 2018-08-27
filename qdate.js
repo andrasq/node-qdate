@@ -63,7 +63,8 @@ module.exports._test = state;
 
 function resetTzCache( ) {
     // always keep the localtime offset on hand
-    state.tzOffsetCache = { localtime: new Date().getTimezoneOffset() };
+    state.tzOffsetCache = { 'localtime': new Date().getTimezoneOffset() };
+    state.tzInfoCache = {};
 
     // uset a timeout not interval to better control drift
     if (state.tzTimer) clearTimeout(state.tzTimer);
@@ -146,27 +147,38 @@ QDate.prototype.lookupTzName = function lookupTzName( tzName ) {
 }
 
 QDate.prototype.abbrev = function abbrev( tzName ) {
+// TODO: use tzinfo
     var cmdline = this.maybeTzEnv(tzName) + this.tzAbbrevCommand;
     return child_process.execSync(cmdline).toString().trim();
 }
 
-QDate.prototype.offset = function offset( tzName ) {
-    tzName = this.lookupTzName(tzName);
-    if (state.tzOffsetCache[tzName] !== undefined) return state.tzOffsetCache[tzName];
-
-    var cmdline = this.maybeTzEnv(tzName) + this.tzOffsetCommand;
-    var tzOffset = parseInt(child_process.execSync(cmdline));
-    if (tzOffset < 0) {
-        // javascript timezone offsets increase toward west of gmt, make positive
-         return state.tzOffsetCache[tzName] = ( 60 * Math.floor(-tzOffset / 100) - -tzOffset % 100 );
-    } else {
-        return state.tzOffsetCache[tzName] = -( 60 * Math.floor(tzOffset / 100) + tzOffset % 100 );
+QDate.prototype._findZoneinfo = function _findZoneinfo( tzName ) {
+    try {
+        return tzinfo.parseZoneinfo(tzinfo.readZoneinfoFileSync(tzName));
+    } catch (e) {
+        throw new Error(sprintf("qdate: %s: no tzinfo found", tzName));
     }
 }
 
+QDate.prototype.offset = function offset( tzName, when ) {
+    if (tzName === 'GMT' || tzName === 'UTC') return 0;
+
+    tzName = this.lookupTzName(tzName);
+    if (when === undefined && state.tzOffsetCache[tzName] !== undefined) return state.tzOffsetCache[tzName];
+
+    // to look up the offset at a specific time, need to use tzinfo
+    // to look up the offset of a specific timezone, better to use tzinfo
+    var info = state.tzInfoCache[tzName] || (state.tzInfoCache[tzName] = this._findZoneinfo(tzName));
+    var stats = tzinfo.findTzinfo(info, when || new Date(), true);
+
+    // convert seconds to minutes and positive direction from east-of-GMT to west-of-GMT
+    var offset =  -(stats.tt_gmtoff / 60);
+
+    if (when === undefined) state.tzOffsetCache[tzName] = offset;
+    return offset;
+}
+
 QDate.prototype.convert = function convert( timestamp, tzFromName, tzToName, format ) {
-    tzFromName = this.lookupTzName(tzFromName);
-    tzToName = this.lookupTzName(tzToName);
     var dt = this.parseDate(timestamp, tzFromName);
     format = format || 'Y-m-d H:i:s';
     return this.format(dt, format, tzToName);
@@ -187,6 +199,7 @@ QDate.prototype.adjust = function adjust( timestamp, delta, units ) {
     var hms = this._splitDate(dt);
     // nb: splitDate converts to local timezone
     // nb: adjusting can land on an invalid date eg 2/31 which Date() handles its own way
+    // TODO: make splitDate split into UTC fields
 
     var field = uinfo[1];
     hms[field] += delta * uinfo[2];     // [name, field, multiplier] tuple eg ['week', 2(=day), 7]
@@ -205,6 +218,8 @@ QDate.prototype.adjust = function adjust( timestamp, delta, units ) {
         }
     }
 
+// FIXME: can only build the correct date if have the current timezone name! 'localtime' not enough
+// FIXME: make split and build always use GMT to avoid the issue
     var dt = this._buildDate(hms);
     return dt;
 }
@@ -219,10 +234,9 @@ QDate.prototype.previous = function previous( timestamp, unit ) {
 
 // extend date?  or annotate each date object with its timezone?
 QDate.prototype.startOf = function startOf( timestamp, units, tzName ) {
-    // TODO: needs a timezone!  ie, meaning of "00:00:00" depends on timezone
     var uinfo = state.getUnitsInfo(units);
     var dt = timestamp instanceof Date ? timestamp : new Date(timestamp);
-    var hms = this._splitDate(dt);
+    var hms = this._splitDate(dt, tzName);
 
     var field = uinfo[1];
 
@@ -234,7 +248,7 @@ QDate.prototype.startOf = function startOf( timestamp, units, tzName ) {
     // zero out all smaller units
     for (var i=field+1; i<hms.length; i++) hms[i] = 0;
 
-    return this._buildDate(hms);
+    return this._buildDate(hms, tzName);
 }
 
 QDate.prototype.strtotime = function strtotime( timespec, tzName ) {
@@ -245,7 +259,7 @@ QDate.prototype.strtotime = function strtotime( timespec, tzName ) {
     return new Date(timestamp);
 }
 
-QDate.prototype.format = function format( timestamp, format, tzName ) {
+QDate.prototype.formatDate = function formatDate( timestamp, format, tzName ) {
     tzName = this.lookupTzName(tzName);
     var dt = this.parseDate(timestamp, tzName);
     if (!tzName) return phpdate(format, timestamp);
@@ -270,43 +284,71 @@ QDate.prototype._escapeString = function _escapeString( str ) {
 }
 
 // convert the timestamp from the named timezone to Date
+// @{timestamp] should be a datetime string without timezone info
 QDate.prototype.parseDate = function parseDate( timestamp, tzName ) {
-    if (timestamp instanceof Date) return timestamp;
-    tzName = this.lookupTzName(tzName);
+    if (typeof timestamp !== 'string') {
+        if (timestamp instanceof Date) return timestamp;
+        if (typeof timestamp === 'number') return new Date(timestamp);
+        throw new Error(sprintf("cannot parse date from '%s'", timestamp));
+    }
 
     // javascript creates Date objects in localtime
     // note: Date parses by syntax, not actual timezone offset,
     //   so "2001-01-01 EDT" => "2001-01-01T04:00:00Z", but "2001-01-01 EST" => "2001-01-01T05:00:00Z"
     // TODO: strip out EDT, EST etc abbreviations, replace with -04:00, -05:00 etc.
+    // javascript Date constructor interprets timestamp strings as being in localtime unless embeds tz info
+
+    // ? strip out the tz name/abbrev, rely exclusively on tzName (but would break "Wed Jan 23" type dates)
+    // timestamp = timestamp.replace(/[A-Za-z]/, ' ') + ' Z';
+    timestamp += ' Z';
     var dt = new Date(timestamp);
 
-    if (tzName) {
-        // adjust dt so formatted for localtime it will read correct for tzName
-        // TODO: should adjust for GMT, since localtime always changes
-        var offs = this.offset('localtime') - this.offset(tzName);
-    }
+    // parse as localtime if no timezone specified
+    if (!tzName) tzName = 'localtime';
+    tzName = this.lookupTzName(tzName);
+
+    // adjust dt so formatted for localtime it will read correct for tzName
+    // note that javascript timezone offsets increase westward and decrease eastward, ie Paris is negative
+    // TODO: should adjust for GMT, since localtime always changes
+
+    // adjust dt for the timestamp being from a non-UTC timezone
+    var offset = this.offset(tzName, dt);
+    dt.setMinutes(dt.getMinutes() + offset);
 
     return dt;
 }
 
+/*
+ * Split the Date object into YMDhms localtime mktime paramters.
+ */
 QDate.prototype._splitDate = function _splitDate( dt, tzName ) {
-    // the Date is split into components according to the system timezone, not utc
-    if (tzName) {
-        // TODO: adjust for specified timezone
-    }
+    dt = this.parseDate(dt, tzName);
+// TODO: split into GMT parts
     return [ dt.getFullYear(), dt.getMonth(), dt.getDate() - 1, dt.getHours(), dt.getMinutes(), dt.getSeconds(), dt.getMilliseconds() ];
     // getMonth returns 0..11, getDate 1..31
 }
 
-QDate.prototype._buildDate = function _buildDate( hms ) {
+/*
+ * construct a Date object from the mktime YMDhms parameters.
+ * If tzName is provided, the parameters are interpreted as being in that timezone.
+ */
+QDate.prototype._buildDate = function _buildDate( hms, tzName ) {
     // days are 1-based, months, hours, minutes, etc all 0-based
-    return new Date(hms[0], hms[1], hms[2] + 1, hms[3], hms[4], hms[5], hms[6]);
+// TODO: assemble from GMT parts, into localtime by offsetting with dt.getTimezoneOffset()
+    var dt = new Date(hms[0], hms[1], hms[2] + 1, hms[3], hms[4], hms[5], hms[6]);
+    var offset = this.offset(tzName || 'localtime');
+    if (tzName) {
+        dt.setMinutes(dt.getMinutes() - this.offset(tzName));
+    }
+    return dt;
 }
 
 // aliases
 QDate.prototype.getTimezoneAbbrev = QDate.prototype.abbrev;
 QDate.prototype.getTimezoneOffset = QDate.prototype.offset;
 QDate.prototype.getTimezoneList = QDate.prototype.list;
+QDate.prototype.parse = QDate.prototype.parseDate;
+QDate.prototype.format = QDate.prototype.formatDate;
 QDate.prototype.current = QDate.prototype.startOf;
 QDate.prototype.next = QDate.prototype.following;
 QDate.prototype.last = QDate.prototype.previous;
