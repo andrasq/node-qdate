@@ -1,5 +1,7 @@
 qdate
 =====
+[![Build Status](https://api.travis-ci.org/andrasq/node-qdate.svg?branch=master)](https://travis-ci.org/andrasq/node-qdate?branch=master)
+[![Coverage Status](https://codecov.io/github/andrasq/node-qdate/coverage.svg?branch=master)](https://codecov.io/github/andrasq/node-qdate?branch=master)
 
 _WORK IN PROGRESS._
 
