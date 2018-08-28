@@ -51,6 +51,7 @@ module.exports = {
             qdate._test.resetTzCache();
             var tz = qdate.abbrev('America/Los_Angeles');
             t.ok(qdate._test.tzAbbrevCache['America/Los_Angeles']);
+            t.equal(qdate.abbrev('America/Los_Angeles'), tz);
             t.done();
         },
     },

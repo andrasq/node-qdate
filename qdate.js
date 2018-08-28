@@ -150,17 +150,32 @@ QDate.prototype.lookupTzName = function lookupTzName( tzName ) {
 }
 
 QDate.prototype.abbrev = function abbrev( tzName ) {
-// TODO: use tzinfo
     if (state.tzAbbrevCache[tzName]) return state.tzAbbrevCache[tzName];
     var cmdline = this.maybeTzEnv(tzName) + this.tzAbbrevCommand;
     return state.tzAbbrevCache[tzName] = child_process.execSync(cmdline).toString().trim();
+
+/**
+    // using tzinfo:
+    try {
+        var stats = this._getZoneinfo(tzName, new Date());
+        return state.tzAbbrevCache[tzName] = stats.abbrev;
+    } catch (err) {
+        return tzName;
+    }
+**/
 }
 
-QDate.prototype._findZoneinfo = function _findZoneinfo( tzName ) {
+/*
+ * get the info for the named timezone, or the tzinfo struct for the specified time
+ */
+QDate.prototype._getZoneinfo = function _getZoneinfo( tzName, when ) {
     try {
-        return tzinfo.parseZoneinfo(tzinfo.readZoneinfoFileSync(tzName));
-    } catch (e) {
-        throw new Error(sprintf("qdate: %s: no tzinfo found", tzName));
+        tzName = this.lookupTzName(tzName);
+        var zoneinfo = state.tzInfoCache[tzName] || (state.tzInfoCache[tzName] = tzinfo.parseZoneinfo(tzinfo.readZoneinfoFileSync(tzName)));
+        return when === undefined ? zoneinfo : tzinfo.findTzinfo(zoneinfo, when, true);
+    }
+    catch (e) {
+        throw new Error(sprintf("qdate: %s: no tzinfo found: %s", tzName, e.message));
     }
 }
 
@@ -172,8 +187,7 @@ QDate.prototype.offset = function offset( tzName, when ) {
 
     // to look up the offset at a specific time, need to use tzinfo
     // to look up the offset of a specific timezone, better to use tzinfo
-    var info = state.tzInfoCache[tzName] || (state.tzInfoCache[tzName] = this._findZoneinfo(tzName));
-    var stats = tzinfo.findTzinfo(info, when || new Date(), true);
+    var stats = this._getZoneinfo(tzName, when || new Date());
 
     // convert seconds to minutes and positive direction from east-of-GMT to west-of-GMT
     var offset =  -(stats.tt_gmtoff / 60);
