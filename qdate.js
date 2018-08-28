@@ -27,6 +27,7 @@ var tzResetInterval = 600000;           // reset cache every 10 min to track day
 var state = {
     tzOffsetCache: null,                // cache of timezones minutes west of gmt
     tzInfoCache: null,                  // cache of tzinfo from `tzinfo`
+    tzAbbrevCache: null,                // cache of current tz abbrev
     tzTimer: null,
     resetTzCache: resetTzCache,
     // units used to adjust date offset mapping
@@ -64,6 +65,7 @@ module.exports._test = state;
 function resetTzCache( ) {
     // always keep the localtime offset on hand
     state.tzOffsetCache = { 'localtime': new Date().getTimezoneOffset() };
+    state.tzAbbrevCache = {};
     state.tzInfoCache = {};
 
     // uset a timeout not interval to better control drift
@@ -129,6 +131,7 @@ var tzCanonicalMap = {
 
 
 function QDate( ) {
+    // gnu date options to retrieve timezone name and abbrev
     this.envCommand = "env";            // /usr/bin/env
     this.tzAbbrevCommand = "date +%Z";
     this.tzOffsetCommand = "date +%z";
@@ -148,8 +151,9 @@ QDate.prototype.lookupTzName = function lookupTzName( tzName ) {
 
 QDate.prototype.abbrev = function abbrev( tzName ) {
 // TODO: use tzinfo
+    if (state.tzAbbrevCache[tzName]) return state.tzAbbrevCache[tzName];
     var cmdline = this.maybeTzEnv(tzName) + this.tzAbbrevCommand;
-    return child_process.execSync(cmdline).toString().trim();
+    return state.tzAbbrevCache[tzName] = child_process.execSync(cmdline).toString().trim();
 }
 
 QDate.prototype._findZoneinfo = function _findZoneinfo( tzName ) {

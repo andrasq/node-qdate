@@ -48,11 +48,9 @@ module.exports = {
         },
 
         'should cache abbrev': function(t) {
+            qdate._test.resetTzCache();
             var tz = qdate.abbrev('America/Los_Angeles');
-            var t1 = Date.now();
-            var tz = qdate.abbrev('America/Los_Angeles');
-            var t2 = Date.now();
-            t.ok(t2 - t1 <= 2);
+            t.ok(qdate._test.tzAbbrevCache['America/Los_Angeles']);
             t.done();
         },
     },
