@@ -65,9 +65,9 @@ module.exports._test = state;
 
 function resetTzCache( ) {
     // always keep the localtime offset on hand
-    state.tzOffsetCache = { 'localtime': new Date().getTimezoneOffset() };
-    state.tzAbbrevCache = {};
-    state.tzInfoCache = {};
+    state.tzOffsetCache = new Object({ 'localtime': new Date().getTimezoneOffset() });
+    state.tzAbbrevCache = new Object();
+    state.tzInfoCache = new Object();
 
     // uset a timeout not interval to better control drift
     if (state.tzTimer) clearTimeout(state.tzTimer);
