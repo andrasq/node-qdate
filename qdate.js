@@ -13,6 +13,7 @@ var child_process = require('child_process');
 var phpdate = require('phpdate-js');
 var qprintf = require('qprintf');
 var sprintf = qprintf.sprintf;
+var sprintf = require('util').format
 var tzinfo = require('tzinfo');
 
 
@@ -211,14 +212,14 @@ QDate.prototype.list = function list( ) {
     return files;
 }
 
-QDate.prototype.adjust = function adjust( timestamp, delta, units ) {
+QDate.prototype.adjust = function adjust( timestamp, delta, units, tzName ) {
     var uinfo = state.getUnitsInfo(units);
-    var dt = timestamp instanceof Date ? timestamp : new Date(timestamp);
-    var hms = this._splitDate(dt);
-    // nb: splitDate converts to local timezone
-    // nb: adjusting can land on an invalid date eg 2/31 which Date() handles its own way
-    // TODO: make splitDate split into UTC fields
 
+    // split the timestamp into localtime hms fields
+    var dt = timestamp instanceof Date ? timestamp : this.parseDate(timestamp, tzName || 'localtime');
+    var hms = this._splitDate(dt, tzName || 'localtime');
+
+    // adjust the hms by the specified delta
     var field = uinfo[1];
     hms[field] += delta * uinfo[2];     // [name, field, multiplier] tuple eg ['week', 2(=day), 7]
 
@@ -236,18 +237,17 @@ QDate.prototype.adjust = function adjust( timestamp, delta, units ) {
         }
     }
 
-// FIXME: can only build the correct date if have the current timezone name! 'localtime' not enough
-// FIXME: make split and build always use GMT to avoid the issue
-    var dt = this._buildDate(hms, 'GMT');
+    // combine the adjusted and clamped/normalized hms fields
+    var dt = this._buildDate(hms, tzName || 'localtime');
     return dt;
 }
 
-QDate.prototype.following = function following( timestamp, unit ) {
-    return this.startOf(this.adjust(timestamp, +1, unit), unit);
+QDate.prototype.following = function following( timestamp, unit, tzName ) {
+    return this.startOf(this.adjust(timestamp, +1, unit), unit, tzName || 'localtime');
 }
 
-QDate.prototype.previous = function previous( timestamp, unit ) {
-    return this.startOf(this.adjust(timestamp, -1, unit), unit);
+QDate.prototype.previous = function previous( timestamp, unit, tzName ) {
+    return this.startOf(this.adjust(timestamp, -1, unit), unit, tzName || 'localtime');
 }
 
 // extend date?  or annotate each date object with its timezone?

@@ -143,23 +143,23 @@ module.exports = {
         },
 
         'should move date forward by units': function(t) {
-            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'ms').toISOString(), "2001-01-01T00:00:00.002Z");
-            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'sec').toISOString(), "2001-01-01T00:00:02.000Z");
-            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'min').toISOString(), "2001-01-01T00:02:00.000Z");
-            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'hr').toISOString(), "2001-01-01T02:00:00.000Z");
-            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'day').toISOString(), "2001-01-03T00:00:00.000Z");
-            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'week').toISOString(), "2001-01-15T00:00:00.000Z");
-            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 1, 'month').toISOString(), "2001-02-01T00:00:00.000Z");
-            t.equal(qdate.adjust("2001-02-01T00:00:00.000Z", 1, 'month').toISOString(), "2001-03-01T00:00:00.000Z");
-            t.equal(qdate.adjust("2001-02-28T00:00:00.000Z", 1, 'month').toISOString(), "2001-03-28T00:00:00.000Z");
-            t.equal(qdate.adjust("2001-02-29T00:00:00.000Z", 1, 'month').toISOString(), "2001-04-01T00:00:00.000Z");    // 2001-02-29 is an invalid date
-            t.equal(qdate.adjust("2016-01-30 12:00:00.000", 1, 'month').toISOString(), "2016-02-29T12:00:00.000Z");     // leap
-            t.equal(qdate.adjust("2015-01-30 12:00:00.000", 1, 'month').toISOString(), "2015-02-28T12:00:00.000Z");     // non-leap
-            t.equal(qdate.adjust("2000-01-30 12:00:00.000", 1, 'month').toISOString(), "2000-02-29T12:00:00.000Z");     // y2k was leap
-            t.equal(qdate.adjust("2015-01-31 12:00:00.000", 2, 'month').toISOString(), "2015-03-31T12:00:00.000Z");
-            t.equal(qdate.adjust("2015-01-31 12:00:00.000", 3, 'month').toISOString(), "2015-04-30T12:00:00.000Z");
-            t.equal(qdate.adjust("2001-01-30T19:00:00.000Z", 1, 'month').toISOString(), "2001-02-28T19:00:00.000Z");
-            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'year').toISOString(), "2003-01-01T00:00:00.000Z");
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'ms', 'GMT').toISOString(), "2001-01-01T00:00:00.002Z");
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'sec', 'GMT').toISOString(), "2001-01-01T00:00:02.000Z");
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'min', 'GMT').toISOString(), "2001-01-01T00:02:00.000Z");
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'hr', 'GMT').toISOString(), "2001-01-01T02:00:00.000Z");
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'day', 'GMT').toISOString(), "2001-01-03T00:00:00.000Z");
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'week', 'GMT').toISOString(), "2001-01-15T00:00:00.000Z");
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 1, 'month', 'GMT').toISOString(), "2001-02-01T00:00:00.000Z");
+            t.equal(qdate.adjust("2001-02-01T00:00:00.000Z", 1, 'month', 'GMT').toISOString(), "2001-03-01T00:00:00.000Z");
+            t.equal(qdate.adjust("2001-02-28T00:00:00.000Z", 1, 'month', 'GMT').toISOString(), "2001-03-28T00:00:00.000Z");
+            t.equal(qdate.adjust("2001-02-29T00:00:00.000Z", 1, 'month', 'GMT').toISOString(), "2001-04-01T00:00:00.000Z");    // 2001-02-29 is an invalid date
+            t.equal(qdate.adjust("2016-01-30 12:00:00.000", 1, 'month', 'GMT').toISOString(), "2016-02-29T12:00:00.000Z");     // leap
+            t.equal(qdate.adjust("2015-01-30 12:00:00.000", 1, 'month', 'GMT').toISOString(), "2015-02-28T12:00:00.000Z");     // non-leap
+            t.equal(qdate.adjust("2000-01-30 12:00:00.000", 1, 'month', 'GMT').toISOString(), "2000-02-29T12:00:00.000Z");     // y2k was leap
+            t.equal(qdate.adjust("2015-01-31 12:00:00.000", 2, 'month', 'GMT').toISOString(), "2015-03-31T12:00:00.000Z");
+            t.equal(qdate.adjust("2015-01-31 12:00:00.000", 3, 'month', 'GMT').toISOString(), "2015-04-30T12:00:00.000Z");
+            t.equal(qdate.adjust("2001-01-30T19:00:00.000Z", 1, 'month', 'GMT').toISOString(), "2001-02-28T19:00:00.000Z");
+            t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'year', 'GMT').toISOString(), "2003-01-01T00:00:00.000Z");
             t.done();
         },
 

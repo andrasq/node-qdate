@@ -37,7 +37,7 @@ returns the offset that was in effect at that time.
 
 return the list of known timezone names as an array of strings
 
-### adjust( timestamp, delta, unit )
+### adjust( timestamp, delta, unit [,tzName] )
 
 return the Date corresponding to the timestamp adjusted by +/- delta units.  Unit
 may be one of 'year', 'month', 'week', 'day', 'hour', 'minute', 'second' or
