@@ -5,7 +5,6 @@
 
 var qdate = require("./");
 var timeit = require('qtimeit');
-var phpdate = require('phpdate-js');
 
 var x = 0, dt = new Date();
 
@@ -153,12 +152,12 @@ module.exports = {
             t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 1, 'month').toISOString(), "2001-02-01T00:00:00.000Z");
             t.equal(qdate.adjust("2001-02-01T00:00:00.000Z", 1, 'month').toISOString(), "2001-03-01T00:00:00.000Z");
             t.equal(qdate.adjust("2001-02-28T00:00:00.000Z", 1, 'month').toISOString(), "2001-03-28T00:00:00.000Z");
-            t.equal(qdate.adjust("2001-02-29T00:00:00.000Z", 1, 'month').toISOString(), "2001-03-29T00:00:00.000Z");    // 2001-02-29 is an invalid date
-            t.equal(phpdate('Y-m-d H:i:s', qdate.adjust("2016-01-30 12:00:00.000", 1, 'month')), "2016-02-29 12:00:00");  // leap
-            t.equal(phpdate('Y-m-d H:i:s', qdate.adjust("2015-01-30 12:00:00.000", 1, 'month')), "2015-02-28 12:00:00");  // non-leap
-            t.equal(phpdate('Y-m-d H:i:s', qdate.adjust("2000-01-30 12:00:00.000", 1, 'month')), "2000-02-29 12:00:00");  // y2k was leap
-            t.equal(phpdate('Y-m-d H:i:s', qdate.adjust("2015-01-31 12:00:00.000", 2, 'month')), "2015-03-31 12:00:00");
-            t.equal(phpdate('Y-m-d H:i:s', qdate.adjust("2015-01-31 12:00:00.000", 3, 'month')), "2015-04-30 12:00:00");
+            t.equal(qdate.adjust("2001-02-29T00:00:00.000Z", 1, 'month').toISOString(), "2001-04-01T00:00:00.000Z");    // 2001-02-29 is an invalid date
+            t.equal(qdate.adjust("2016-01-30 12:00:00.000", 1, 'month').toISOString(), "2016-02-29T12:00:00.000Z");     // leap
+            t.equal(qdate.adjust("2015-01-30 12:00:00.000", 1, 'month').toISOString(), "2015-02-28T12:00:00.000Z");     // non-leap
+            t.equal(qdate.adjust("2000-01-30 12:00:00.000", 1, 'month').toISOString(), "2000-02-29T12:00:00.000Z");     // y2k was leap
+            t.equal(qdate.adjust("2015-01-31 12:00:00.000", 2, 'month').toISOString(), "2015-03-31T12:00:00.000Z");
+            t.equal(qdate.adjust("2015-01-31 12:00:00.000", 3, 'month').toISOString(), "2015-04-30T12:00:00.000Z");
             t.equal(qdate.adjust("2001-01-30T19:00:00.000Z", 1, 'month').toISOString(), "2001-02-28T19:00:00.000Z");
             t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'year').toISOString(), "2003-01-01T00:00:00.000Z");
             t.done();
@@ -187,16 +186,22 @@ module.exports = {
         },
 
         'should return start of current local timezone time period': function(t) {
-            var dt = new Date('2017-02-03 12:34:56.789');
-            t.equal(phpdate('Y-m-d H:i:s', qdate.startOf(dt, 'year')), '2017-01-01 00:00:00');
-            t.equal(phpdate('Y-m-d H:i:s', qdate.startOf(dt, 'month')), '2017-02-01 00:00:00');
-            t.equal(phpdate('Y-m-d H:i:s', qdate.startOf(dt, 'week')), '2017-01-29 00:00:00');
-            t.equal(phpdate('Y-m-d H:i:s', qdate.startOf("2016-02-03 12:34:56.789", 'week')), '2016-01-31 00:00:00');
-            t.equal(phpdate('Y-m-d H:i:s', qdate.startOf(dt, 'day')), '2017-02-03 00:00:00');
-            t.equal(phpdate('Y-m-d H:i:s', qdate.startOf(dt, 'hour')), '2017-02-03 12:00:00');
-            t.equal(phpdate('Y-m-d H:i:s.u', qdate.startOf(dt, 'minute')), '2017-02-03 12:34:00.000000');
-            t.equal(phpdate('Y-m-d H:i:s.u', qdate.startOf(dt, 'second')), '2017-02-03 12:34:56.000000');
-            t.equal(phpdate('Y-m-d H:i:s.u', qdate.startOf(dt, 'millisecond')), '2017-02-03 12:34:56.789000');
+            var dt = new Date('2017-02-03 12:34:56.789Z');
+            t.equal(qdate.startOf(dt, 'year', 'EST').toISOString(), '2017-01-01T05:00:00.000Z');
+            t.equal(qdate.startOf(dt, 'month', 'EST').toISOString(), '2017-02-01T05:00:00.000Z');
+            t.equal(qdate.startOf(dt, 'week', 'EST').toISOString(), '2017-01-29T05:00:00.000Z');
+            t.equal(qdate.startOf("2016-02-03 12:34:56.789", 'week', 'EST').toISOString(), '2016-01-31T05:00:00.000Z');
+            t.equal(qdate.startOf(dt, 'day', 'EST').toISOString(), '2017-02-03T05:00:00.000Z');
+            t.equal(qdate.startOf(dt, 'day', 'GMT').toISOString(), '2017-02-03T00:00:00.000Z');
+            t.equal(qdate.startOf(dt, 'hour', 'EST').toISOString(), '2017-02-03T12:00:00.000Z');
+            t.equal(qdate.startOf(dt, 'minute', 'EST').toISOString(), '2017-02-03T12:34:00.000Z');
+            t.equal(qdate.startOf(dt, 'second', 'EST').toISOString(), '2017-02-03T12:34:56.000Z');
+            t.equal(qdate.startOf(dt, 'millisecond', 'EST').toISOString(), '2017-02-03T12:34:56.789Z');
+
+            t.equal(qdate.startOf('2017-02-03 12:34:56.789', 'hour', 'EST').toISOString(), '2017-02-03T17:00:00.000Z');
+            t.equal(qdate.startOf('2017-02-03 12:34:56.789', 'hour', 'PST').toISOString(), '2017-02-03T20:00:00.000Z');
+            t.equal(qdate.startOf('2017-02-03 12:34:56.789', 'minute', 'PST').toISOString(), '2017-02-03T20:34:00.000Z');
+
             t.done();
         },
 
@@ -206,6 +211,7 @@ module.exports = {
             qdate.previous(now, 'hour');
             t.equal(spy.callCount, 1);
             t.equal(+spy.args[0][0], +now - 1*3600*1000);
+            t.equal(spy.args[0][1], 'hour');
             t.done();
         },
 
@@ -289,6 +295,47 @@ module.exports = {
             t.equal(spy.args[0][1], 'T e');
             t.equal(spy.args[0][2], 'GMT');
             t.done();
+        },
+    },
+
+    'helpers': {
+        '_splitDate': {
+            'should split datetime strings': function(t) {
+                var dt = new Date('2018-09-15T12:34:56.789Z');
+                var dataset = [
+                    [ '2018-09-15T12:34:56.789', 'GMT',            [2018, 08, 14, 12, 34, 56, 789] ],   // gmt string split in gmt
+                    [ new Date('2018-09-15T12:34:56.789Z'), 'GMT', [2018, 08, 14, 12, 34, 56, 789] ],   // gmt dt split in gmt
+                    [ '2018-09-15T12:34:56.789', 'EDT',            [2018, 08, 14, 12, 34, 56, 789] ],   // tz string split as-is
+                    [ new Date('2018-09-15T16:34:56.789Z'), 'EDT', [2018, 08, 14, 12, 34, 56, 789] ],   // tz dt split in tz
+                    [ new Date('2018-09-15T19:34:56.789Z'), 'PDT', [2018, 08, 14, 12, 34, 56, 789] ],   // tz dt split in tz
+                    [ dt, null, qdate._splitDate(dt, 'localtime') ],                                    // default splits in localtime
+                ];
+
+                for (var i=0; i<dataset.length; i++) {
+                    t.deepEqual(qdate._splitDate(dataset[i][0], dataset[i][1]), dataset[i][2], "data item " + i);
+                }
+
+                t.done();
+            },
+        },
+
+        '_buildDate': {
+            'should build dates': function(t) {
+                var dt = new Date('2018-09-15T12:34:56.789Z');
+                var offs = dt.getTimezoneOffset();
+                var dataset = [
+                    [ [2018, 08, 14, 12, 34, 56, 789], 'GMT', dt ],                                     // builds from gmt parts
+                    [ [2018, 08, 14,  8, 34, 56, 789], 'EDT', dt ],                                     // builds from tz parts
+                    [ [2018, 08, 14,  5, 34, 56, 789], 'PDT', dt ],                                     // builds from tz parts
+                    [ [2018, 08, 14, 12, 34, 56, 789], null, new Date(+dt + offs * 60000) ],            // defaults builds from localtime
+                ];
+
+                for (var i=0; i<dataset.length; i++) {
+                    t.deepEqual(qdate._buildDate(dataset[i][0], dataset[i][1]), dataset[i][2], "data item " + i);
+                }
+
+                t.done();
+            },
         },
     },
 }

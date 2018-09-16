@@ -190,10 +190,10 @@ QDate.prototype.offset = function offset( tzName, when ) {
     var stats = this._getZoneinfo(tzName, when || new Date());
 
     // convert seconds to minutes and positive direction from east-of-GMT to west-of-GMT
-    var offset =  -(stats.tt_gmtoff / 60);
+    var minutesToGMT =  -(stats.tt_gmtoff / 60);
 
-    if (when === undefined) state.tzOffsetCache[tzName] = offset;
-    return offset;
+    if (when === undefined) state.tzOffsetCache[tzName] = minutesToGMT;
+    return minutesToGMT;
 }
 
 QDate.prototype.convert = function convert( timestamp, tzFromName, tzToName, format ) {
@@ -238,7 +238,7 @@ QDate.prototype.adjust = function adjust( timestamp, delta, units ) {
 
 // FIXME: can only build the correct date if have the current timezone name! 'localtime' not enough
 // FIXME: make split and build always use GMT to avoid the issue
-    var dt = this._buildDate(hms);
+    var dt = this._buildDate(hms, 'GMT');
     return dt;
 }
 
@@ -252,8 +252,9 @@ QDate.prototype.previous = function previous( timestamp, unit ) {
 
 // extend date?  or annotate each date object with its timezone?
 QDate.prototype.startOf = function startOf( timestamp, units, tzName ) {
+    tzName = tzName || 'localtime';
     var uinfo = state.getUnitsInfo(units);
-    var dt = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    var dt = this.parseDate(timestamp, tzName);
     var hms = this._splitDate(dt, tzName);
 
     var field = uinfo[1];
@@ -266,7 +267,8 @@ QDate.prototype.startOf = function startOf( timestamp, units, tzName ) {
     // zero out all smaller units
     for (var i=field+1; i<hms.length; i++) hms[i] = 0;
 
-    return this._buildDate(hms, tzName);
+    var dt = this._buildDate(hms, tzName);
+    return dt;
 }
 
 QDate.prototype.strtotime = function strtotime( timespec, tzName ) {
@@ -310,7 +312,6 @@ QDate.prototype.parseDate = function parseDate( timestamp, tzName ) {
         throw new Error(sprintf("cannot parse date from '%s'", timestamp));
     }
 
-    // javascript creates Date objects in localtime
     // note: Date parses by syntax, not actual timezone offset,
     //   so "2001-01-01 EDT" => "2001-01-01T04:00:00Z", but "2001-01-01 EST" => "2001-01-01T05:00:00Z"
     // TODO: strip out EDT, EST etc abbreviations, replace with -04:00, -05:00 etc.
@@ -318,45 +319,59 @@ QDate.prototype.parseDate = function parseDate( timestamp, tzName ) {
 
     // ? strip out the tz name/abbrev, rely exclusively on tzName (but would break "Wed Jan 23" type dates)
     // timestamp = timestamp.replace(/[A-Za-z]/, ' ') + ' Z';
-    timestamp += ' Z';
+    if (! /Z\s*$/.test(timestamp)) timestamp += 'Z';
     var dt = new Date(timestamp);
 
     // parse as localtime if no timezone specified
-    if (!tzName) tzName = 'localtime';
-    tzName = this.lookupTzName(tzName);
-
-    // adjust dt so formatted for localtime it will read correct for tzName
-    // note that javascript timezone offsets increase westward and decrease eastward, ie Paris is negative
-    // TODO: should adjust for GMT, since localtime always changes
+    tzName = this.lookupTzName(tzName || 'localtime');
 
     // adjust dt for the timestamp being from a non-UTC timezone
-    var offset = this.offset(tzName, dt);
-    dt.setMinutes(dt.getMinutes() + offset);
+// FIXME: actually, need the offset not for dt, but for dt + offsetToGMT
+    var minutesToGMT = this.offset(tzName, dt);
+    dt.setMinutes(dt.getMinutes() + minutesToGMT);
 
     return dt;
 }
 
 /*
- * Split the Date object into YMDhms localtime mktime paramters.
+ * Split the Date object into YMDhms mktime hms fields.
+ * If a timezone is named, split into timezone-specific hms fields.
  */
 QDate.prototype._splitDate = function _splitDate( dt, tzName ) {
-    dt = this.parseDate(dt, tzName);
-// TODO: split into GMT parts
-    return [ dt.getFullYear(), dt.getMonth(), dt.getDate() - 1, dt.getHours(), dt.getMinutes(), dt.getSeconds(), dt.getMilliseconds() ];
-    // getMonth returns 0..11, getDate 1..31
+    if (typeof dt === 'object') {
+        var minutesToGMT = this.offset(tzName || 'localtime', dt);
+        if (minutesToGMT) {
+            // offset the GMT Date to make hms fields read localtime values
+            // TODO: check that this works during ST/DT changes
+            dt = new Date(dt);
+            dt.setMinutes(dt.getMinutes() - minutesToGMT);
+        }
+    } else {
+        // split a datetime string as is, without tz adjust
+        dt = this.parseDate(dt, 'GMT');
+    }
+    var hms = [ dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() - 1,
+                dt.getUTCHours(), dt.getUTCMinutes(), dt.getUTCSeconds(), dt.getUTCMilliseconds() ];
+    return hms;
 }
 
 /*
- * construct a Date object from the mktime YMDhms parameters.
+ * assemble a Date object from the mktime YMDhms fields.
  * If tzName is provided, the parameters are interpreted as being in that timezone.
  */
 QDate.prototype._buildDate = function _buildDate( hms, tzName ) {
+    // assemble date as if GMT to avoid localtime
     // days are 1-based, months, hours, minutes, etc all 0-based
-// TODO: assemble from GMT parts, into localtime by offsetting with dt.getTimezoneOffset()
-    var dt = new Date(hms[0], hms[1], hms[2] + 1, hms[3], hms[4], hms[5], hms[6]);
-    var offset = this.offset(tzName || 'localtime');
-    if (tzName) {
-        dt.setMinutes(dt.getMinutes() - this.offset(tzName));
+    var dt = new Date(1000 * (3600*hms[3] + 60*hms[4] + hms[5]) + hms[6]);
+    dt.setUTCFullYear(hms[0]);
+    dt.setUTCMonth(hms[1]);
+    dt.setUTCDate(hms[2] + 1);
+
+    var minutesToGMT = this.offset(tzName || 'localtime', dt);
+    if (minutesToGMT) {
+        // if hms was not in GMT, adjust the Date by the tz offset
+        // TODO: confirm that this works during ST/DT changes
+        dt.setMinutes(dt.getMinutes() + minutesToGMT);
     }
     return dt;
 }
