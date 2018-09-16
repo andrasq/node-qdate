@@ -199,6 +199,8 @@ module.exports = {
             t.equal(qdate.startOf(dt, 'millisecond', 'EST').toISOString(), '2017-02-03T12:34:56.789Z');
 
             t.equal(qdate.startOf('2017-02-03 12:34:56.789', 'hour', 'EST').toISOString(), '2017-02-03T17:00:00.000Z');
+            t.equal(qdate.startOf('2017-02-03 12:34:56.789', 'hour', 'GMT').toISOString(), '2017-02-03T12:00:00.000Z');
+            t.equal(qdate.startOf('2017-02-03 12:34:56.789', 'hour', 'UTC').toISOString(), '2017-02-03T12:00:00.000Z');
             t.equal(qdate.startOf('2017-02-03 12:34:56.789', 'hour', 'PST').toISOString(), '2017-02-03T20:00:00.000Z');
             t.equal(qdate.startOf('2017-02-03 12:34:56.789', 'minute', 'PST').toISOString(), '2017-02-03T20:34:00.000Z');
 

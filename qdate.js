@@ -362,15 +362,21 @@ QDate.prototype._splitDate = function _splitDate( dt, tzName ) {
 QDate.prototype._buildDate = function _buildDate( hms, tzName ) {
     // assemble date as if GMT to avoid localtime
     // days are 1-based, months, hours, minutes, etc all 0-based
-    var dt = new Date(1000 * (3600*hms[3] + 60*hms[4] + hms[5]) + hms[6]);
+    // new Date(1000*(h*3600 + m*60 + s) + ms) builds wrong date if eg hrs == -1
+    var dt = new Date(0);
     dt.setUTCFullYear(hms[0]);
     dt.setUTCMonth(hms[1]);
     dt.setUTCDate(hms[2] + 1);
+    dt.setUTCHours(hms[3]);
+    dt.setUTCMinutes(hms[4]);
+    dt.setUTCSeconds(hms[5]);
+    dt.setUTCMilliseconds(hms[6]);
 
     var minutesToGMT = this.offset(tzName || 'localtime', dt);
     if (minutesToGMT) {
         // if hms was not in GMT, adjust the Date by the tz offset
         // TODO: confirm that this works during ST/DT changes
+        // FIXME: actually, need the offset not of dt, but the adjusted dt + minutesToGMT
         dt.setMinutes(dt.getMinutes() + minutesToGMT);
     }
     return dt;
