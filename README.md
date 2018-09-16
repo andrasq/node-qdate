@@ -31,7 +31,7 @@ return the three-character timezone abbreviation of the named timezone
 
 return the current offset as minutes west of GMT of the named timezone.  This is what
 `new Date().getTimezoneOffset()` does for the default timezone.  If `when` is specified,
-returns the offset that was in effect at that time.
+returns the offset in effect at that time.
 
 ### list( ), getTimezoneList
 
