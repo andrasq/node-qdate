@@ -174,7 +174,7 @@ QDate.prototype._getZoneinfo = function _getZoneinfo( tzName, when ) {
     try {
         tzName = this.lookupTzName(tzName);
         var zoneinfo = state.tzInfoCache[tzName] || (state.tzInfoCache[tzName] = tzinfo.parseZoneinfo(tzinfo.readZoneinfoFileSync(tzName)));
-        return when === undefined ? zoneinfo : tzinfo.findTzinfo(zoneinfo, when, true);
+        return tzinfo.findTzinfo(zoneinfo, when, true);
     }
     catch (e) {
         throw new Error(sprintf("qdate: %s: no tzinfo found: %s", tzName, e.message));

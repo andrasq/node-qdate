@@ -163,6 +163,13 @@ module.exports = {
             t.done();
         },
 
+        'should default interpret timestamp as localtime': function(t) {
+            var dt = new Date();
+            var expectDt = new Date(+dt + 7200000 + qdate.offset('localtime', dt)*60000);
+            t.equal(qdate.adjust(dt.toISOString().replace('Z', ''), +2, 'hr').toISOString(), expectDt.toISOString());
+            t.done();
+        },
+
         'adjust should adjust +1': function(t) {
             t.done();
         },
