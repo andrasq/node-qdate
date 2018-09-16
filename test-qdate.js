@@ -26,11 +26,10 @@ var x = 0, dt = new Date();
 //timeit(100000, function(){ x = new Date(1, 2, 3, 4, 5, 6, 7) })
 // 4m/s v6.7.0 Skylake, 3.62m/s v7.5.0
 
-console.log("AR: got", x, x.toString());
+// console.log("AR: got", x, x.toString());
 // note: Date stringifies with toString if first arg of console.log, with toJSON if second arg
 // actual serialization depends on nodejs version, node before v6 didn't do toJSON
-
-console.log("AR: +2 hrs", qdate.strtotime("+2 hours"));
+// console.log("AR: +2 hrs", qdate.strtotime("+2 hours"));
 
 
 module.exports = {
