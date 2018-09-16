@@ -168,7 +168,7 @@ QDate.prototype.abbrev = function abbrev( tzName ) {
 }
 
 /*
- * get the info for the named timezone, or the tzinfo struct for the specified time
+ * get the tzinfo struct for the specified time
  */
 QDate.prototype._getZoneinfo = function _getZoneinfo( tzName, when ) {
     try {
@@ -181,6 +181,11 @@ QDate.prototype._getZoneinfo = function _getZoneinfo( tzName, when ) {
     }
 }
 
+/*
+ * return the minutes west of GMT of tzName, either now or at the time `when`
+ * Note that JavaScript uses positive values for offsets west of 0 longitude,
+ * while in most other contexts positives are east of 0 longitude.
+ */
 QDate.prototype.offset = function offset( tzName, when ) {
     if (tzName === 'GMT' || tzName === 'UTC') return 0;
 
@@ -198,12 +203,20 @@ QDate.prototype.offset = function offset( tzName, when ) {
     return minutesToGMT;
 }
 
+/*
+ * timezone convert the datetime string `timestamp` per the phpdate format `format`
+ * The default format is an SQL ISO-9075 datetime string without fractional seconds.
+ */
 QDate.prototype.convert = function convert( timestamp, tzFromName, tzToName, format ) {
     var dt = this.parseDate(timestamp, tzFromName);
     format = format || 'Y-m-d H:i:s';
     return this.format(dt, format, tzToName);
 }
 
+/*
+ * return a list of all known timezones.
+ * The master list is retrieved just once on program start.
+ */
 QDate.prototype.list = function list( ) {
     var dirname = tzinfo.getZoneinfoDirectory();
     var files = new Array();
@@ -213,6 +226,18 @@ QDate.prototype.list = function list( ) {
     return files;
 }
 
+/*
+ * adjust the date represented by timestamp up or down by `+delta` or `-delta` units.
+ * Units can be eg `hours`, `days`, `minutes` etc.  If timestamp is a string, it will
+ * be parsed as if being from timezone `tzName`.  Adjustment is done to be correct for
+ * tzName (else localtime), which affects how months are capped.
+ * Returns a Date object corresponding to the adjusted date.
+ *
+ * Adjusting the months is special: if the resulting day is past the adjusted month,
+ * the day is capped at the last day of the month.  Ie, 12/30 +2 months returns 2/28 or
+ * 2/29 (depending on whether it's a leap year), not 3/2 or 3/1.  This also means that
+ * repeatedly adjusting by month can land on different days of the month, eg 31, 30, 28.
+ */
 QDate.prototype.adjust = function adjust( timestamp, delta, units, tzName ) {
     var uinfo = state.getUnitsInfo(units);
 
@@ -243,15 +268,32 @@ QDate.prototype.adjust = function adjust( timestamp, delta, units, tzName ) {
     return dt;
 }
 
+/*
+ * return the start of the next time unit, eg next month, next day, etc.
+ * Timestamp can be a datetime string of Date object.
+ * The start is calculated in tzName (or localtime), so the day following
+ * 1/1 1:00am GMT in would be 1/1 Eastern time, but 1/2 in Paris.
+ */
 QDate.prototype.following = function following( timestamp, unit, tzName ) {
     return this.startOf(this.adjust(timestamp, +1, unit), unit, tzName || 'localtime');
 }
 
+/*
+ * return the start of the previous time unit, eg last month, last day, etc
+ * Timestamp can be a datetime string of Date object.
+ * The start is calculated in tzName (or localtime), so the day preceding
+ * 1/2 1:00am GMT in would be 12/31 Eastern time, but 1/1 in Paris.
+ */
 QDate.prototype.previous = function previous( timestamp, unit, tzName ) {
     return this.startOf(this.adjust(timestamp, -1, unit), unit, tzName || 'localtime');
 }
 
-// extend date?  or annotate each date object with its timezone?
+/*
+ * return a Date correesponding to the start of the named time unit.
+ * Timestamp can be a datetime string of Date object.
+ * The start is calculated in tzName (or localtime), so the start of the day
+ * 1/1 1:00am GMT would be 12/31 Eastern time but 1/1 in Paris.
+ */
 QDate.prototype.startOf = function startOf( timestamp, units, tzName ) {
     tzName = tzName || 'localtime';
     var uinfo = state.getUnitsInfo(units);
@@ -262,6 +304,7 @@ QDate.prototype.startOf = function startOf( timestamp, units, tzName ) {
 
     // for weeks, move the day back to the start of this week
 // TODO: TZDate() object, extend with getTZDay(), getTZMinute() etc methods
+// extend date?  or annotate each date object with its timezone?
 // FIXME: day of week depends on timezone!  eg 10pm EST -> 2am GMT next day
     if (uinfo[0] === 'week') hms[2] -= dt.getDay();
 
@@ -272,6 +315,9 @@ QDate.prototype.startOf = function startOf( timestamp, units, tzName ) {
     return dt;
 }
 
+/*
+ * convert the timespec string to a Date with gnu date: date --date="%s"
+ */
 QDate.prototype.strtotime = function strtotime( timespec, tzName ) {
     tzName = this.lookupTzName(tzName);
     if (typeof timespec !== 'string') throw new Error("timespec must be a string not " + (typeof timespec));
@@ -280,6 +326,11 @@ QDate.prototype.strtotime = function strtotime( timespec, tzName ) {
     return new Date(timestamp);
 }
 
+/*
+ * format the date represented by timestamp with phpdate
+ * Timestamp can be a string in tzName (or localtime) or a Date object.
+ * TODO: handles only localtime, does not handle arbitrary timezones yet.
+ */
 QDate.prototype.formatDate = function formatDate( timestamp, format, tzName ) {
     tzName = this.lookupTzName(tzName);
     var dt = this.parseDate(timestamp, tzName);
@@ -300,12 +351,18 @@ QDate.prototype.formatUnix = function formatUnix( timestamp, tzName ) {
 **/
 
 
+// shell-escape the string to make it safe for use in a shell command line
+// Presumes that quoted strings are double-quoted
 QDate.prototype._escapeString = function _escapeString( str ) {
     return str.replace('\\', '\\\\').replace('"', '\\"');
 }
 
-// convert the timestamp from the named timezone to Date
-// @{timestamp] should be a datetime string without timezone info
+/*
+ * convert the timestamp from the named timezone to Date
+ * `timestamp` should be a datetime string without timezone info
+ * The timestamp is interprted as being in tzName.
+ * Returns a Date object.
+ */
 QDate.prototype.parseDate = function parseDate( timestamp, tzName ) {
     if (typeof timestamp !== 'string') {
         if (timestamp instanceof Date) return timestamp;
