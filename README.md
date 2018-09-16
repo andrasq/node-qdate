@@ -83,9 +83,6 @@ The default format is `"Y-m-d H:i:s"`.  Formatting by `phpdate-js`
 Todo
 ----
 
-- way to fetch the default timezone abbreviation (to use in formatting) `date +%Z`
-- should refactor to internally always work in GMT (not localtime)
-
 
 Change Log
 ----------
