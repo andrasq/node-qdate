@@ -257,6 +257,14 @@ module.exports = {
             t.throws(function(){ qdate.strtotime(new Date()) });
             t.done();
         },
+
+        'should escape embedded special chars': function(t) {
+            try { qdate.strtotime('0\";pwd;$PWD;\\') }
+            catch (e) {
+                t.contains(e.message, /invalid date .0\";pwd;\$PWD;\\\\.\n$/);
+                t.done();
+            }
+        },
     },
 
     'parseDate': {
