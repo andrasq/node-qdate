@@ -259,9 +259,9 @@ module.exports = {
         },
 
         'should escape embedded special chars': function(t) {
-            try { qdate.strtotime('0\";pwd;$PWD;\\') }
+            try { qdate.strtotime('0\";pwd;$PWD;`pwd`;\\') }
             catch (e) {
-                t.contains(e.message, /invalid date .0\";pwd;\$PWD;\\\\.\n$/);
+                t.contains(e.message, /invalid date .0\";pwd;\$PWD;`pwd`;\\\\.\n$/);
                 t.done();
             }
         },

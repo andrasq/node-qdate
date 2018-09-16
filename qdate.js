@@ -354,7 +354,7 @@ QDate.prototype.formatUnix = function formatUnix( timestamp, tzName ) {
 // shell-escape the string to make it safe for use in a shell command line
 // Presumes that quoted strings are double-quoted
 QDate.prototype._escapeString = function _escapeString( str ) {
-    return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$');
+    return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/\`/g, '\\`');
 }
 
 /*
