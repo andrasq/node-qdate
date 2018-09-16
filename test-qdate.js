@@ -172,6 +172,17 @@ module.exports = {
         },
 
         'startOf should clear less significant units': function(t) {
+            t.equal(qdate.startOf("2001-02-03 12:34:56.789", 'ms', 'EST').toISOString(), "2001-02-03T17:34:56.789Z");
+            t.equal(qdate.startOf("2001-02-03 12:34:56.789", 's', 'EST').toISOString(), "2001-02-03T17:34:56.000Z");
+            t.equal(qdate.startOf("2001-02-03 12:34:56.789", 'min', 'EST').toISOString(), "2001-02-03T17:34:00.000Z");
+            t.equal(qdate.startOf("2001-02-03 12:34:56.789", 'min', 'CST').toISOString(), "2001-02-03T18:34:00.000Z");
+            t.equal(qdate.startOf("2001-02-03 12:34:56.789", 'hr', 'EST').toISOString(), "2001-02-03T17:00:00.000Z");
+            t.equal(qdate.startOf("2001-02-03 12:34:56.789", 'day', 'EST').toISOString(), "2001-02-03T05:00:00.000Z");
+            t.equal(qdate.startOf("2001-02-03 12:34:56.789", 'mo', 'EST').toISOString(), "2001-02-01T05:00:00.000Z");
+            t.equal(qdate.startOf("2001-02-03 12:34:56.789", 'y', 'EST').toISOString(), "2001-01-01T05:00:00.000Z");
+
+            t.equal(qdate.startOf("2004-02-29 01:23:45.678", 'mos', 'EST').toISOString(), "2004-02-01T05:00:00.000Z");
+            t.equal(qdate.startOf("2004-02-29 01:23:45.678", 'mos', 'UTC').toISOString(), "2004-02-01T00:00:00.000Z");
             t.done();
         },
     },

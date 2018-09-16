@@ -36,7 +36,7 @@ var state = {
     // (note that each unit is 1 of iteself, except a week is defined as 7 days)
     unitsInfo: {
         year: ['year', 0, 1],       years: -1, yr: -1, yrs: -1, y: -1, Y: -1,
-        month: ['month', 1, 1],     months: -1, mo: -1, mos: -1, M: -1,
+        month: ['month', 1, 1],     months: -1, mo: -1, mos: -1, mon: -1, mons: -1, M: -1,
         week: ['week', 2, 7],       weeks: -1, wk: -1, wks: -1, w: -1, W: -1,
         day: ['day', 2, 1],         days: -1, dy: -1, d: -1, D: -1,
         hour: ['hour', 3, 1],       hours: -1, hr: -1, hrs: -1, h: -1,
@@ -163,6 +163,7 @@ QDate.prototype.abbrev = function abbrev( tzName ) {
     } catch (err) {
         return tzName;
     }
+// TODO: if cannot locate, use eg GMT+0100, GMT-0400
 **/
 }
 
