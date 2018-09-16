@@ -393,8 +393,8 @@ QDate.prototype.current = QDate.prototype.startOf;
 QDate.prototype.next = QDate.prototype.following;
 QDate.prototype.last = QDate.prototype.previous;
 
-QDate.prototype = QDate.prototype;
-
+QDate.prototype = toStruct(QDate.prototype);
+function toStruct( hash ) { return toStruct.prototype = hash }
 
 // do not convert known timezones eg US/Eastern to America/New_York
 for (var k in tzCanonicalMap) {
