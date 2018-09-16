@@ -15,7 +15,7 @@
   "readme": "see README.md in the repo",
 
   "dependencies": {
-    "tzinfo": "https://github.com/andrasq/node-tzinfo#0.5.0",
+    "tzinfo": "https://github.com/andrasq/node-tzinfo#0.5.1",
     "phpdate-js": "1.0.3",
     "qprintf": "0.9.2"
   },
