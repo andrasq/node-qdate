@@ -227,9 +227,9 @@ module.exports = {
         'previous should call startOf': function(t) {
             var spy = t.spyOnce(qdate, 'startOf');
             var now = new Date();
-            qdate.previous(now, 'hour');
+            var dt = qdate.previous(now, 'hour');
             t.equal(spy.callCount, 1);
-            t.equal(+spy.args[0][0], +now - 1*3600*1000);
+            t.equal(spy.args[0][0].toISOString(), new Date(+now - 1*3600*1000).toISOString());
             t.equal(spy.args[0][1], 'hour');
             t.done();
         },

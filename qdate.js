@@ -230,19 +230,33 @@ QDate.prototype.list = function list( ) {
  * adjust the date represented by timestamp up or down by `+delta` or `-delta` units.
  * Units can be eg `hours`, `days`, `minutes` etc.  If timestamp is a string, it will
  * be parsed as if being from timezone `tzName`.  Adjustment is done to be correct for
- * tzName (else localtime), which affects how months are capped.
+ * tzName (else localtime), which affects how months are clamped.
  * Returns a Date object corresponding to the adjusted date.
  *
- * Adjusting the months is special: if the resulting day is past the adjusted month,
- * the day is capped at the last day of the month.  Ie, 12/30 +2 months returns 2/28 or
- * 2/29 (depending on whether it's a leap year), not 3/2 or 3/1.  This also means that
- * repeatedly adjusting by month can land on different days of the month, eg 31, 30, 28.
+ * Adjusting the months is special: if the resulting day is past the end of the month,
+ * clamp the day to the last day of the month.  Ie, 12/30 +2 months returns 2/28 or 2/29
+ * (depending on whether it's a leap year), not 3/2 or 3/1.  This also means that
+ * repeatedly adjusting the month can clamp the day multiple times, from 31 to 30 to 28.
  */
 QDate.prototype.adjust = function adjust( timestamp, delta, units, tzName ) {
     var uinfo = state.getUnitsInfo(units);
 
-    // split the timestamp into localtime hms fields
-    var dt = timestamp instanceof Date ? timestamp : this.parseDate(timestamp, tzName || 'localtime');
+    var dt = timestamp instanceof Date ? new Date(timestamp) : this.parseDate(timestamp, tzName || 'localtime');
+
+    // adjust all but months quickly, directly on the Date object
+    // months are special, and are handled below
+    switch (uinfo[0]) {
+        case 'year':        dt.setUTCFullYear(dt.getUTCFullYear() + delta);         return dt;
+        // month handled below
+        case 'week':        dt.setUTCDate(dt.getUTCDate() + 7 * delta);             return dt;
+        case 'day':         dt.setUTCDate(dt.getUTCDate() + delta);                 return dt;
+        case 'hour':        dt.setUTCHours(dt.getUTCHours() + delta);               return dt;
+        case 'minute':      dt.setUTCMinutes(dt.getUTCMinutes() + delta);           return dt;
+        case 'second':      dt.setUTCSeconds(dt.getUTCSeconds() + delta);           return dt;
+        case 'millisecond': dt.setUTCMilliseconds(dt.getUTCMilliseconds() + delta); return dt;
+    }
+
+    // to special-case adjusting months, split the timestamp into localtime hms fields
     var hms = this._splitDate(dt, tzName || 'localtime');
 
     // adjust the hms by the specified delta
@@ -252,7 +266,7 @@ QDate.prototype.adjust = function adjust( timestamp, delta, units, tzName ) {
     // adjusting by months is different from all the others,
     // because months are different sizes.  Ie, 1/5 -> 2/5 -> 3/5 -> 4/5, but
     // 1/30 -> 2/28 -> 3/30 -> 4/30, and 1/31 -> 2/28 -> 3/31 -> 4/30.
-    // If adjusted months, cap the current day at the last valid day of the new month
+    // If adjusted months, clamp the current day at the last valid day of the new month
     // but not if adjusted hours or days, which need to wrap correctly
     if (field === 1 && hms[2] > state.monthDays[hms[1]] - 1) {
         // peg at last day of month, except February needs a leap year test
