@@ -191,6 +191,13 @@ module.exports = {
             t.equal(qdate.startOf("2004-02-29 01:23:45.678", 'mos', 'UTC').toISOString(), "2004-02-01T00:00:00.000Z");
             t.done();
         },
+
+        'speed': function(t) {
+            var dt = new Date();
+            for (var i=0; i<100000; i++) dt = qdate.adjust(dt, +1, 'minute');
+            // 557k/s with split/build, 3.6m/s with direct update on Date object
+            t.done();
+        },
     },
 
     'startOf': {
@@ -344,6 +351,14 @@ module.exports = {
 
                 t.done();
             },
+
+            'speed': function(t) {
+                var dt = new Date();
+                var x;
+                for (var i=0; i<100000; i++) x = qdate._splitDate(dt);
+                // 1.75m/s
+                t.done();
+            },
         },
 
         '_buildDate': {
@@ -361,6 +376,15 @@ module.exports = {
                     t.deepEqual(qdate._buildDate(dataset[i][0], dataset[i][1]), dataset[i][2], "data item " + i);
                 }
 
+                t.done();
+            },
+
+            'speed': function(t) {
+                var dt = new Date();
+                var hms = qdate._splitDate(dt);
+                var x;
+                for (var i=0; i<100000; i++) x = qdate._buildDate(hms);
+                // 1m/s
                 t.done();
             },
         },
