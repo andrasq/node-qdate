@@ -240,8 +240,9 @@ QDate.prototype.list = function list( ) {
  */
 QDate.prototype.adjust = function adjust( timestamp, delta, units, tzName ) {
     var uinfo = state.getUnitsInfo(units);
+    tzName = tzName || 'localtime';
 
-    var dt = timestamp instanceof Date ? new Date(timestamp) : this.parseDate(timestamp, tzName || 'localtime');
+    var dt = timestamp instanceof Date ? new Date(timestamp) : this.parseDate(timestamp, tzName);
 
     // adjust all but months quickly, directly on the Date object
     // months are special, and are handled below
@@ -257,7 +258,7 @@ QDate.prototype.adjust = function adjust( timestamp, delta, units, tzName ) {
     }
 
     // to special-case adjusting months, split the timestamp into localtime hms fields
-    var hms = this._splitDate(dt, tzName || 'localtime');
+    var hms = this._splitDate(dt, tzName);
 
     // adjust the hms by the specified delta
     var field = uinfo[1];
@@ -278,7 +279,7 @@ QDate.prototype.adjust = function adjust( timestamp, delta, units, tzName ) {
     }
 
     // combine the adjusted and clamped/normalized hms fields
-    var dt = this._buildDate(hms, tzName || 'localtime');
+    var dt = this._buildDate(hms, tzName);
     return dt;
 }
 
