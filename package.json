@@ -5,14 +5,11 @@
   "description": "quick little date converter",
   "author": "andras@andrasq.com",
   "license": "Apache-2.0",
-  "repository": {
-    "url": "git://github.com/andrasq/node-qdate.git"
-  },
+
+  "repository": { "type": "git", "url": "git://github.com/andrasq/node-qdate.git" },
   "keywords": [ "date", "adjust", "convert", "Andras", "timezone" ],
-  "engines": {
-    "node": ">= 0.11"
-  },
   "readme": "see README.md in the repo",
+  "engines": { "node": ">= 0.11" },
 
   "dependencies": {
     "tzinfo": "https://github.com/andrasq/node-tzinfo#0.5.1",
