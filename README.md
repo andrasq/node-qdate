@@ -87,6 +87,7 @@ Todo
 Change Log
 ----------
 
+- 0.2.0 - fix end-of-month clamping for year adjusts, round old date LMT fractional offets to 15 min
 - 0.1.1 - tighten up the shell escaping of timespecs, speed up adjust
 - 0.1.0 - use tzinfo to obtain timezone offsets
 - 0.0.4 - refactor into a singleton, split into an array, startOf, previous, following methods

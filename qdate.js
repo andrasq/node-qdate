@@ -208,7 +208,6 @@ QDate.prototype.offset = function offset( tzName, when ) {
         // subtracting signed remainder truncates toward zero
         minutesToGMT += minutesToGMT < 0 ? -15 : 15;
         minutesToGMT -= (minutesToGMT % 15);
-console.log("AR: rounded timezone offset to", minutesToGMT);
     }
 
     if (when === undefined && !rounded) state.tzOffsetCache[tzName] = minutesToGMT;
@@ -415,7 +414,6 @@ QDate.prototype.parseDate = function parseDate( timestamp, tzName ) {
     // adjust dt for the timestamp being from a non-UTC timezone
 // FIXME: actually, need the offset not for dt, but for dt + offsetToGMT
     var minutesToGMT = this.offset(tzName, dt);
-console.log("AR: minutesToGMT", minutesToGMT, this._getZoneinfo(tzName, dt));
     dt.setMinutes(dt.getMinutes() + minutesToGMT);
 
     return dt;
