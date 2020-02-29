@@ -3,7 +3,6 @@ qdate
 [![Build Status](https://api.travis-ci.org/andrasq/node-qdate.svg?branch=master)](https://travis-ci.org/andrasq/node-qdate?branch=master)
 [![Coverage Status](https://coveralls.io/repos/github/andrasq/node-qdate/badge.svg?branch=master)](https://coveralls.io/github/andrasq/node-qdate?branch=master)
 
-_WORK IN PROGRESS._
 
 Small, light and quick handy date conversion functions.
 
@@ -65,25 +64,6 @@ Unit as in `adjust`.
 return the Date corresponding to the start of the named unit preceding the current.
 Unit as in `adjust`.
 
-##### ? format( timestamp, format [,tzName] )
-
-TBD.
-
-format the timestamp in the named timezone locale.
-Formatting by `phpdate-js`
-
-
-##### ? convert( timestamp, tzFromName, tzToName, [format] )
-
-TBD.
-
-convert the timestamp between timezones, and return a reformatted timestamp.
-The default format is `"Y-m-d H:i:s"`.  Formatting by `phpdate-js`
-
-
-Todo
-----
-
 
 Change Log
 ----------
@@ -107,3 +87,4 @@ Related
 - `/etc/timezone`
 - `/usr/share/zoneinfo`
 - `tzselect(1)`
+- [`tzinfo`](https://npmjs.com/package/tzinfo) - zoneinfo file parsing
