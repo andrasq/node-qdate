@@ -1,13 +1,16 @@
 language: node_js
 node_js:
+  # 0.10 did not have execSync
   - 0.11
   - 6
   - 8
   - 10
+  - 12
+  - 13
 before_install:
   - npm install -g npm@2.15.0
 after_success:
   - if [ `node -p 'process.version.slice(0, 3)'` != "v8." ]; then exit; fi
-  - npm install -g nyc codecov coveralls
-  - nyc --reporter lcov npm test && codecov
+  - npm install -g nyc coveralls
+  - nyc --reporter lcov npm test
   - nyc report -r text-lcov | coveralls
