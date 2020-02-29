@@ -152,14 +152,12 @@ QDate.prototype.lookupTzName = function lookupTzName( tzName ) {
 
 QDate.prototype.abbrev = function abbrev( tzName ) {
     if (state.tzAbbrevCache[tzName] !== undefined) return state.tzAbbrevCache[tzName];
-    try {
-        var stats = this._getZoneinfo(tzName, new Date());
-        return state.tzAbbrevCache[tzName] = stats.abbrev;
-    }
-    catch (err) {
-        return state.tzAbbrevCache[tzName] = null;
-        // TODO: if cannot locate, use eg GMT+0100, GMT-0400
-    }
+
+    var abbrev = null;
+    try { abbrev = this._getZoneinfo(tzName, new Date()).abbrev } catch (e) {}
+    return state.tzAbbrevCache[tzName] = abbrev;
+
+    // TODO: if cannot locate, use eg GMT+0100, GMT-0400
 }
 
 /*
