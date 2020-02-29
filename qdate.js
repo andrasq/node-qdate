@@ -247,8 +247,7 @@ QDate.prototype.adjust = function adjust( timestamp, delta, units, tzName ) {
     // adjust all but months quickly, directly on the Date object
     // months are special, and are handled below
     switch (uinfo[0]) {
-        case 'year':        dt.setUTCFullYear(dt.getUTCFullYear() + delta);         return dt;
-        // month handled below
+        // month, year handled below
         case 'week':        dt.setUTCDate(dt.getUTCDate() + 7 * delta);             return dt;
         case 'day':         dt.setUTCDate(dt.getUTCDate() + delta);                 return dt;
         case 'hour':        dt.setUTCHours(dt.getUTCHours() + delta);               return dt;
@@ -257,7 +256,7 @@ QDate.prototype.adjust = function adjust( timestamp, delta, units, tzName ) {
         case 'millisecond': dt.setUTCMilliseconds(dt.getUTCMilliseconds() + delta); return dt;
     }
 
-    // to special-case adjusting months, split the timestamp into localtime hms fields
+    // to clamp months when adjusting months/years, split the timestamp into hms fields
     var hms = this._splitDate(dt, tzName);
 
     // adjust the hms by the specified delta
@@ -269,16 +268,19 @@ QDate.prototype.adjust = function adjust( timestamp, delta, units, tzName ) {
     // 1/30 -> 2/28 -> 3/30 -> 4/30, and 1/31 -> 2/28 -> 3/31 -> 4/30.
     // If adjusted months, clamp the current day at the last valid day of the new month
     // but not if adjusted hours or days, which need to wrap correctly
-    if (field === 1 && hms[2] > state.monthDays[hms[1]] - 1) {
+    // Adjusting years same thing, eg 2020-02-29 --> 2021-02-28
+    if ((field === 0 || field === 1) && hms[2] > state.monthDays[hms[1]] - 1) {
         // peg at last day of month, except February needs a leap year test
         hms[2] = state.monthDays[hms[1]] - 1;
         if (hms[1] === 1) {
             var yr = hms[0], isLeap = (yr % 4) === 0 && ((yr % 100) !== 0 || (yr % 400) === 0);
+            // in leap years February has 29 days, clamp to 29.
+            // Note that if the adjusted date lands on 28, no clamping is done.
             if (isLeap) hms[2] += 1;
         }
     }
 
-    // combine the adjusted and clamped/normalized hms fields
+    // combine the adjusted and clamped/normalized hms fields back into a Date
     var dt = this._buildDate(hms, tzName);
     return dt;
 }
@@ -390,8 +392,8 @@ QDate.prototype.parseDate = function parseDate( timestamp, tzName ) {
     // TODO: strip out EDT, EST etc abbreviations, replace with -04:00, -05:00 etc.
     // javascript Date constructor interprets timestamp strings as being in localtime unless embeds tz info
 
-    // ? strip out the tz name/abbrev, rely exclusively on tzName (but would break "Wed Jan 23" type dates)
-    // timestamp = timestamp.replace(/[A-Za-z]/, ' ') + ' Z';
+    // ? strip out any appended timezone, rely exclusively on tzName
+    // timestamp = timestamp.replace(/[A-Z/a-z]+$/, ' ') + ' Z';
     if (! /Z\s*$/.test(timestamp)) timestamp += 'Z';
     var dt = new Date(timestamp);
 
@@ -409,6 +411,7 @@ QDate.prototype.parseDate = function parseDate( timestamp, tzName ) {
 /*
  * Split the Date object into YMDhms mktime hms fields.
  * If a timezone is named, split into timezone-specific hms fields.
+ * Note that all split fields are 0..N-1 (unlike Date.setDate(), which is 1..N)
  */
 QDate.prototype._splitDate = function _splitDate( dt, tzName ) {
     if (typeof dt === 'object') {
@@ -431,6 +434,7 @@ QDate.prototype._splitDate = function _splitDate( dt, tzName ) {
 /*
  * assemble a Date object from the mktime YMDhms fields.
  * If tzName is provided, the parameters are interpreted as being in that timezone.
+ * Note that all split fields are 0..N-1 (unlike Date.setDate(), which is 1..N)
  */
 QDate.prototype._buildDate = function _buildDate( hms, tzName ) {
     // assemble date as if GMT to avoid localtime
@@ -444,6 +448,9 @@ QDate.prototype._buildDate = function _buildDate( hms, tzName ) {
     dt.setUTCMinutes(hms[4]);
     dt.setUTCSeconds(hms[5]);
     dt.setUTCMilliseconds(hms[6]);
+    // TODO: potentially 28% faster, but this version produces wrong results:
+    //   var totalMs = ((((hms[2] * 24) + hms[3] * 60) + hms[4]) * 60 + hms[5]) * 1000 + hms[6];
+    //   dt.setUTCMilliseconds(totalMs);
 
     var minutesToGMT = this.offset(tzName || 'localtime', dt);
     if (minutesToGMT) {

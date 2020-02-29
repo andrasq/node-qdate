@@ -152,6 +152,10 @@ module.exports = {
             t.equal(qdate.adjust("2001-02-01T00:00:00.000Z", 1, 'month', 'GMT').toISOString(), "2001-03-01T00:00:00.000Z");
             t.equal(qdate.adjust("2001-02-28T00:00:00.000Z", 1, 'month', 'GMT').toISOString(), "2001-03-28T00:00:00.000Z");
             t.equal(qdate.adjust("2001-02-29T00:00:00.000Z", 1, 'month', 'GMT').toISOString(), "2001-04-01T00:00:00.000Z");    // 2001-02-29 is an invalid date
+            t.done();
+        },
+
+        'should clamp adjustment that lands past end-of-month': function(t) {
             t.equal(qdate.adjust("2016-01-30 12:00:00.000", 1, 'month', 'GMT').toISOString(), "2016-02-29T12:00:00.000Z");     // leap
             t.equal(qdate.adjust("2015-01-30 12:00:00.000", 1, 'month', 'GMT').toISOString(), "2015-02-28T12:00:00.000Z");     // non-leap
             t.equal(qdate.adjust("2000-01-30 12:00:00.000", 1, 'month', 'GMT').toISOString(), "2000-02-29T12:00:00.000Z");     // y2k was leap
@@ -159,6 +163,8 @@ module.exports = {
             t.equal(qdate.adjust("2015-01-31 12:00:00.000", 3, 'month', 'GMT').toISOString(), "2015-04-30T12:00:00.000Z");
             t.equal(qdate.adjust("2001-01-30T19:00:00.000Z", 1, 'month', 'GMT').toISOString(), "2001-02-28T19:00:00.000Z");
             t.equal(qdate.adjust("2001-01-01T00:00:00.000Z", 2, 'year', 'GMT').toISOString(), "2003-01-01T00:00:00.000Z");
+            t.equal(qdate.adjust("2000-01-30T00:00:00.000Z", 1, 'month', 'GMT').toISOString(), "2000-02-29T00:00:00.000Z");     // leap
+            t.equal(qdate.adjust("2000-02-29T00:00:00.000Z", 1, 'year', 'GMT').toISOString(), "2001-02-28T00:00:00.000Z");      // leap
             t.done();
         },
 
