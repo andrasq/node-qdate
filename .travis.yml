@@ -1,12 +1,12 @@
 language: node_js
 node_js:
   # 0.10 did not have execSync
-  - 0.11
-  - 6
-  - 8
+  #- 0.11
+  #- 6
+  #- 8
   - 10
-  - 12
-  - 13
+  #- 12
+  #- 13
 before_install:
   - npm install -g npm@2.15.0
 after_success:
