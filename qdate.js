@@ -1,7 +1,7 @@
 /**
  * simple timezone and datetime adjustment functions
  *
- * Copyright (C) 2016-2018 Andras Radics
+ * Copyright (C) 2016-2020 Andras Radics
  * Licensed under the Apache License, Version 2.0
  *
  * 2016-10-11 - Started.
