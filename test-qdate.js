@@ -265,6 +265,13 @@ module.exports = {
             t.done();
         },
 
+        'should convert date in timezone to date': function(t) {
+            // omit Z from end of date string, because Z specifies timezone
+            var dt = qdate.strtotime('2020-02-29T12:34:56', 'US/Eastern');
+            t.equal(dt.toISOString(), '2020-02-29T17:34:56.000Z');
+            t.done();
+        },
+
         'should reject non-string timespec': function(t) {
             t.throws(function(){ qdate.strtotime(2) });
             t.throws(function(){ qdate.strtotime(new Date()) });
@@ -300,8 +307,8 @@ module.exports = {
             t.equal(qdate.parse('2999-01-01 12:34:56', 'US/Eastern').toISOString(), '2999-01-01T17:34:56.000Z');        // too far in the future, assume ST
 
             // note: for old dates before global normalization, tzinfo returns the LMT local mean time to gmt, we round that to 15 mins
-            t.equal(qdate.parse('1812-01-01 12:34:56', 'US/Eastern').toISOString(), '1812-01-01T17:34:56.000Z');        // no DT yet, 300 min lmt offset
-            t.equal(qdate.parse('1812-08-01 12:34:56', 'US/Eastern').toISOString(), '1812-08-01T17:34:56.000Z');        // no DT yet, 300 min lmt offset
+            t.equal(qdate.parse('1812-01-01 12:34:56', 'America/Havana').toISOString(), '1812-01-01T18:04:56.000Z');    // no DT yet, 330 min lmt offset
+            t.equal(qdate.parse('1812-08-01 12:34:56', 'America/Havana').toISOString(), '1812-08-01T18:04:56.000Z');    // no DT yet, 300 min lmt offset
             t.equal(qdate.parse('1812-01-01 12:34:56', 'Europe/Eastern').toISOString(), '1812-01-01T11:04:56.000Z');    // no DT yet, 90 min lmt offset
             t.equal(qdate.parse('1812-08-01 12:34:56', 'Europe/Eastern').toISOString(), '1812-08-01T11:04:56.000Z');    // no DT yet, 90 min lmt offset
 
