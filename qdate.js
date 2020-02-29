@@ -448,14 +448,19 @@ QDate.prototype._buildDate = function _buildDate( hms, tzName ) {
     var dt = new Date(0);
     dt.setUTCFullYear(hms[0]);
     dt.setUTCMonth(hms[1]);
-    dt.setUTCDate(hms[2] + 1);
-    dt.setUTCHours(hms[3]);
-    dt.setUTCMinutes(hms[4]);
-    dt.setUTCSeconds(hms[5]);
-    dt.setUTCMilliseconds(hms[6]);
-    // TODO: potentially 28% faster, but this version produces wrong results:
-    //   var totalMs = ((((hms[2] * 24) + hms[3] * 60) + hms[4]) * 60 + hms[5]) * 1000 + hms[6];
-    //   dt.setUTCMilliseconds(totalMs);
+    // dt.setUTCDate(hms[2] + 1);
+    // dt.setUTCHours(hms[3]);
+    // dt.setUTCMinutes(hms[4]);
+    // dt.setUTCSeconds(hms[5]);
+    // dt.setUTCMilliseconds(hms[6]);
+    // 28% faster than setting many separate fields:
+    var ms =
+        hms[2] * 24 * 60 * 60 * 1000 +
+        hms[3] * 60 * 60 * 1000 +
+        hms[4] * 60 * 1000 +
+        hms[5] * 1000 +
+        hms[6];
+    dt.setUTCMilliseconds(ms);
 
     var minutesToGMT = this.offset(tzName || 'localtime', dt);
     if (minutesToGMT) {

@@ -385,6 +385,7 @@ module.exports = {
                 var dataset = [
                     [ [2018, 08, 14, 12, 34, 56, 789], 'GMT', dt ],                                     // builds from gmt parts
                     [ [2018, 08, 14,  8, 34, 56, 789], 'EDT', dt ],                                     // builds from tz parts
+                    [ [2018, 08, 14, -1, 9*60 + 34, 56, 789], 'EDT', dt ],                                     // builds with negative hours offset
                     [ [2018, 08, 14,  5, 34, 56, 789], 'PDT', dt ],                                     // builds from tz parts
                     [ [2018, 08, 14, 12, 34, 56, 789], null, new Date(+dt + offs * 60000) ],            // defaults builds from localtime
                 ];
