@@ -25,13 +25,14 @@ Api
 
 ### abbrev( tzName ), getTimezoneAbbrev
 
-return the three-character timezone abbreviation of the named timezone
+return the three-character timezone abbreviation of the named timezone, or `null` if not known.
+Note that the abbreviation is what is currently in effect, and may change with daylight savings.
 
 ### offset( tzName [,when] ), getTimezoneOffset
 
 return the current offset as minutes west of GMT of the named timezone.  This is what
 `new Date().getTimezoneOffset()` does for the default timezone.  If `when` is specified,
-returns the offset in effect at that time.
+returns the offset in effect at that time.  Throws an Error if the named timezone is not found.
 
 ### list( ), getTimezoneList
 

@@ -109,8 +109,8 @@ var tzAliasMap = {
     MSK: 'Europe/Moscow', /* MST, MDST, */                      // -0300
 };
 
-// map linux-only eg US/Eastern to canonical timezone names
-// Entries that are locally recognized are deleted from this map.
+// alias linux-only eg US/Eastern to their canonical timezone names
+// Entries that are locally recognized are deleted from this map and are used as-is.
 var tzCanonicalMap = {
     'Canada/Newfoundland': 'America/St_Johns',
     'Canada/Atlantic': 'America/Halifax',
@@ -121,7 +121,7 @@ var tzCanonicalMap = {
 
     'US/Eastern': 'America/New_York',
     'US/Central': 'America/Chicago',
-    'US/Moutain': 'America/Boise',
+    'US/Mountain': 'America/Boise',
     'US/Pacific': 'America/Los_Angeles',
     'US/Alaska': 'America/Juneau',
     'US/Hawaii': 'Pacific/Honolulu',
@@ -151,20 +151,15 @@ QDate.prototype.lookupTzName = function lookupTzName( tzName ) {
 }
 
 QDate.prototype.abbrev = function abbrev( tzName ) {
-    if (state.tzAbbrevCache[tzName]) return state.tzAbbrevCache[tzName];
-    var cmdline = this.maybeTzEnv(tzName) + this.tzAbbrevCommand;
-    return state.tzAbbrevCache[tzName] = child_process.execSync(cmdline).toString().trim();
-
-/**
-    // using tzinfo:
+    if (state.tzAbbrevCache[tzName] !== undefined) return state.tzAbbrevCache[tzName];
     try {
         var stats = this._getZoneinfo(tzName, new Date());
         return state.tzAbbrevCache[tzName] = stats.abbrev;
-    } catch (err) {
-        return tzName;
     }
-// TODO: if cannot locate, use eg GMT+0100, GMT-0400
-**/
+    catch (err) {
+        return state.tzAbbrevCache[tzName] = null;
+        // TODO: if cannot locate, use eg GMT+0100, GMT-0400
+    }
 }
 
 /*
@@ -172,7 +167,6 @@ QDate.prototype.abbrev = function abbrev( tzName ) {
  */
 QDate.prototype._getZoneinfo = function _getZoneinfo( tzName, when ) {
     try {
-        tzName = this.lookupTzName(tzName);
         var zoneinfo = state.tzInfoCache[tzName] || (state.tzInfoCache[tzName] = tzinfo.parseZoneinfo(tzinfo.readZoneinfoFileSync(tzName)));
         return tzinfo.findTzinfo(zoneinfo, when, true);
     }
@@ -202,11 +196,11 @@ QDate.prototype.offset = function offset( tzName, when ) {
 
     // CAUTION: newer Linux systems return LMT with fractional timezone offsets
     // for dates before date/time regularization.  Disbelieve anything that's not a
-    // multiple of 15 minutes, and round it to the nearest 1/2 hour.
+    // multiple of 15 minutes, and round it to the nearest 15 min.
     if (minutesToGMT % 15 !== 0) {
         rounded = true;
         // subtracting signed remainder truncates toward zero
-        minutesToGMT += minutesToGMT < 0 ? -15 : 15;
+        minutesToGMT += minutesToGMT < 0 ? -15/2 : 15/2;
         minutesToGMT -= (minutesToGMT % 15);
     }
 
@@ -488,7 +482,7 @@ function toStruct( hash ) { return toStruct.prototype = hash }
 
 // do not convert known timezones eg US/Eastern to America/New_York
 for (var k in tzCanonicalMap) {
-    new QDate().abbrev(k) && delete tzCanonicalMap[k];
+    try { new QDate()._getZoneinfo(k) && delete tzCanonicalMap[k] } catch (e) {}
 }
 
 // look up the default timezone name, if available

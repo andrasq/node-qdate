@@ -298,8 +298,12 @@ module.exports = {
             t.equal(qdate.parse('2037-01-01 12:34:56', 'US/Eastern').toISOString(), '2037-01-01T17:34:56.000Z');        // future ST
             t.equal(qdate.parse('2037-08-01 12:34:56', 'US/Eastern').toISOString(), '2037-08-01T16:34:56.000Z');        // future DT
             t.equal(qdate.parse('2999-01-01 12:34:56', 'US/Eastern').toISOString(), '2999-01-01T17:34:56.000Z');        // too far in the future, assume ST
-            t.equal(qdate.parse('1812-01-01 12:34:56', 'US/Eastern').toISOString(), '1812-01-01T17:34:56.000Z');        // no DT yet
-            t.equal(qdate.parse('1812-08-01 12:34:56', 'US/Eastern').toISOString(), '1812-08-01T17:34:56.000Z');        // no DT yet
+
+            // note: for old dates before global normalization, tzinfo returns the LMT local mean time to gmt, we round that to 15 mins
+            t.equal(qdate.parse('1812-01-01 12:34:56', 'US/Eastern').toISOString(), '1812-01-01T17:34:56.000Z');        // no DT yet, 300 min lmt offset
+            t.equal(qdate.parse('1812-08-01 12:34:56', 'US/Eastern').toISOString(), '1812-08-01T17:34:56.000Z');        // no DT yet, 300 min lmt offset
+            t.equal(qdate.parse('1812-01-01 12:34:56', 'Europe/Eastern').toISOString(), '1812-01-01T11:04:56.000Z');    // no DT yet, 90 min lmt offset
+            t.equal(qdate.parse('1812-08-01 12:34:56', 'Europe/Eastern').toISOString(), '1812-08-01T11:04:56.000Z');    // no DT yet, 90 min lmt offset
 
             t.equal(qdate.parse(1535328000000, 'US/Eastern').toISOString(), '2018-08-27T00:00:00.000Z');
 
